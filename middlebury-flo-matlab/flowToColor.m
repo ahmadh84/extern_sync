@@ -67,7 +67,13 @@ minv = min(minv, min(v(:)));
 rad = sqrt(u.^2+v.^2);
 maxrad = max(maxrad, max(rad(:)));
 
-fprintf('max flow: %.4f flow range: u = %.3f .. %.3f; v = %.3f .. %.3f\n', maxrad, minu, maxu, minv, maxv);
+do_print = 1;
+if length(varargin) == 2
+    do_print = varargin{2};  
+end;
+if do_print
+    fprintf('max flow: %.4f flow range: u = %.3f .. %.3f; v = %.3f .. %.3f\n', maxrad, minu, maxu, minv, maxv);
+end;
 
 if isempty(varargin) ==0
     maxFlow = varargin{1};
