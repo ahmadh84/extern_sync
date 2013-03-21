@@ -30,6 +30,11 @@ function f = compute_error_metric(masks, GT, params, type)
 %       TP/(FP+FN+TP). 'intersect_gt' computes the precision TP/(FP+TP).
 %       'incorrect_pixels' computes FP+FN i.e. number of incorrect pixels.
 
+    % if GT has a third dimension, pick the first layer
+    if ndims(GT) == 3
+        GT = GT(:,:,1);
+    end
+    
     % find what sort of GT is it
     gt_vals = unique(GT);
     if numel(gt_vals) == 2;
