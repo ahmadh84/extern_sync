@@ -37,7 +37,7 @@ function f = compute_error_metric(masks, GT, params, type)
     
     % find what sort of GT is it
     gt_vals = unique(GT);
-    if numel(gt_vals) == 2;
+    if numel(gt_vals) <= 2;
         % if GT is binary
         assert(any(gt_vals == 0), ...
             'The GT provided has no background (0 values)');
