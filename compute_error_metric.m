@@ -39,8 +39,8 @@ function f = compute_error_metric(masks, GT, params, type)
     gt_vals = unique(GT);
     if numel(gt_vals) <= 2;
         % if GT is binary
-        assert(any(gt_vals == 0), ...
-            'The GT provided has no background (0 values)');
+%         assert(any(gt_vals == 0), ...
+%             'The GT provided has no background (0 values)');
         
         GT = logical(GT > 0);
         
