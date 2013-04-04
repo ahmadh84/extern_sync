@@ -27,8 +27,9 @@ function f = compute_error_metric(masks, GT, params, type)
 %
 %   type (<'overlap'>, 'intersect_gt', 'centroid_displacement'): specifies
 %       the type of overlap you want to compute. 'overlap' computes
-%       TP/(FP+FN+TP). 'intersect_gt' computes the precision TP/(FP+TP).
-%       'incorrect_pixels' computes FP+FN i.e. number of incorrect pixels.
+%       TP/(FP+FN+TP) OR intersection/union. 'intersect_gt' computes the 
+%       precision TP/(FP+TP). 'incorrect_pixels' computes FP+FN i.e. number 
+%       of incorrect pixels.
 
     % if GT has a third dimension, pick the first layer
     if ndims(GT) == 3
