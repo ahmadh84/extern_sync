@@ -45,10 +45,11 @@ d = d(1:end-length('im2boundariesTopLevel.m'));
 % load(fullfile(d, '../data/continuityClassifiers.mat'));
 % gclassifiers1 = load(fullfile(d, '../data/ijcvClassifier.mat'));
 % gclassifiers2 = load(fullfile(d, '../data/perfectSegClassifierCv.mat'));
-load('/projects/vision/2/yjlee/code/proposals/src/iccv07Final/data/boundaryClassifiers.mat');
-load('/projects/vision/2/yjlee/code/proposals/src/iccv07Final/data/continuityClassifiers.mat');
-gclassifiers1 = load('/projects/vision/2/yjlee/code/proposals/src/iccv07Final/data/ijcvClassifier.mat');
-gclassifiers2 = load('/projects/vision/2/yjlee/code/proposals/src/iccv07Final/data/perfectSegClassifierCv.mat');
+curr_dir = fileparts(which(mfilename));
+load(fullfile(curr_dir, '../data/boundaryClassifiers.mat'));
+load(fullfile(curr_dir, '../data/continuityClassifiers.mat'));
+gclassifiers1 = load(fullfile(curr_dir, '../data/ijcvClassifier.mat'));
+gclassifiers2 = load(fullfile(curr_dir, '../data/perfectSegClassifierCv.mat'));
 
 % create pb confidences
 disp('pb')
@@ -64,7 +65,7 @@ tic
 %imwrite(im, infn);
 %outfn = ['./' tmpbn '.pnm'];
 %syscall = [fullfile(d,'segment') ' 0.8 100 100 ' infn ' ' outfn];
-[pg, tmp, imsegs] = ijcvTestImage2(im, {0.8, 100, 100}, gclassifiers1);
+[pg, tmp, imsegs] = ijcvTestImage2(im, {0.8, 100, 100}, gclassifiers1);  % random
 %delete(infn);
 %delete(outfn);
 clear tmp

@@ -1,12 +1,15 @@
-addpath([pwd '/detector'])
-addpath([pwd '/detector/util'])
-addpath([pwd '/descriptor'])
-addpath([pwd '/display'])
+curr_dir = fileparts(which(mfilename));
+utils_dir = fullfile(curr_dir, '..', '..');
 
-addpath([pwd '/external/matlab_bgl/'])
-addpath([pwd '/external/pwmetric/'])
-addpath([pwd '/external/vlfeat-0.9.8/toolbox'])
-addpath([pwd '/external/bsr/lib'])
-addpath([pwd '/external/spanning_tree'])
+addpath([curr_dir '/detector'])
+addpath([curr_dir '/detector/util'])
+addpath([curr_dir '/descriptor'])
+addpath([curr_dir '/display'])
+
+addpath(fullfile(utils_dir, 'graph_algos', 'matlab_bgl'))
+addpath(fullfile(utils_dir, 'metrics', 'hua_pwmetric'))
+addpath(fullfile(utils_dir, 'toolboxes', 'vlfeat', 'toolbox'))
+addpath(fullfile(utils_dir, 'segmentation', 'boundaries+segments--arbelaez_PAMI_2010_bsr', 'lib'))
+addpath(fullfile(utils_dir, 'graph_algos', 'spanning_tree'))
 vl_setup
 disp('BPLR ready.')

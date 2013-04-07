@@ -1,4 +1,4 @@
-function [BPLR, desc1, desc2] = demo(img_file, rsz, order_k, euc_f, min_nseg, max_nseg, grid_space, min_elem_scale, magnif, phog_L, n_angle_bin, n_length_bin)
+function [BPLR, desc1, desc2] = demo(img_file, out_data_path, rsz, order_k, euc_f, min_nseg, max_nseg, grid_space, min_elem_scale, magnif, phog_L, n_angle_bin, n_length_bin)
 % This demo contains routines for BPLR extraction and descriptor(PHOG) computation.
 % Once BPLRs are extracted, users can represent them by any existing
 % descriptors; for convenience, we also provide codes for some descriptors: PHOG, chordiogram and color historam.
@@ -58,6 +58,8 @@ function [BPLR, desc1, desc2] = demo(img_file, rsz, order_k, euc_f, min_nseg, ma
 % desc.feat_centers: feature location, desc.feat_centers(:,i) = image
 % coordinate of the i-th BPLR's center.
 
+bplr_startup;
+
 if  (nargin == 1) % default parameters
     rsz = 1.0;
     order_k = 25;
@@ -77,7 +79,7 @@ end
 im = imread(img_file);
 im = imresize(im ,rsz);
 [img_path,img_name,img_ext] = fileparts(img_file);
-img_file_rsz = [img_path '/' img_name '_rsz_' num2str(rsz) img_ext];
+img_file_rsz = fullfile(out_data_path, [img_name '_rsz_' num2str(rsz) img_ext]);
 imwrite(im, img_file_rsz);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,7 +87,7 @@ imwrite(im, img_file_rsz);
 
 % 1. compute globalPb
 % gpb_out_file = [img_file '_gPb_rsz_' num2str(rsz) ' .mat'];
-gpb_out_file = [img_file '_gPb.mat'];
+gpb_out_file = fullfile(out_data_path, [img_name, img_ext, '_gPb.mat']);
 if ( ~exist(gpb_out_file, 'file') )
     disp('Compute gPb...');
     [gPb_orient gPb_thin] = globalPb(img_file_rsz, gpb_out_file, 1.0);
@@ -95,7 +97,7 @@ end
 
 % 2. compute Hierarchical Regions
 % ucm_out_file = [img_file '_ucm_rsz_' num2str(rsz) '.mat'];
-ucm_out_file = [img_file '_ucm.mat'];
+ucm_out_file = fullfile(out_data_path, [img_name, img_ext, '_ucm.mat']);
 if ( ~exist(ucm_out_file, 'file') )
     ucm = contours2ucm(gPb_orient, 'imageSize');
     save(ucm_out_file, 'ucm');

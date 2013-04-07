@@ -20,7 +20,9 @@ function [ranked_regions superpixels image_data unary] = generate_proposals(inpu
 
 
 function_root = which('generate_proposals.m');
-function_root = function_root(1:end-length('generate_proposals.m'));
+function_root = fileparts(function_root);
+
+proposals_startup;
 
 if(isstr(input))
    im = im2double(imread(input));
@@ -36,7 +38,7 @@ fprintf('***Extracting image level features******\n');
 fprintf('------Occlusion boundaries + Geometric context------\n')
 start_ob = tic;
 [occ.bndinfo, occ.pbim, image_data.gconf, occ.bndinfo_all] = ...
-   processIm2Occlusion(im);
+   processIm2Occlusion(im);                                        % random
 [occ.pb1, occ.pb2, occ.theta] = getOrientedOcclusionProbs(occ.bndinfo_all);
 bmaps = getOcclusionMaps(occ.bndinfo_all); 
 occ.bmap = mean(bmaps,3); 
@@ -59,7 +61,7 @@ fprintf('Done (%f)\n', toc(start_ct));
 fprintf('------Probability of BG------\n');
 start_bg = tic;
 msclassifiers = load(fullfile(function_root, 'classifiers', 'msBgClassifiers.mat'));
-[image_data.bg] = processIm2MsObjects(im, msclassifiers);
+[image_data.bg] = processIm2MsObjects(im, msclassifiers);          % random
 fprintf('Done (%f)\n', toc(start_bg));
 fprintf('\nTotal time: %f\n', toc(start_image));
 

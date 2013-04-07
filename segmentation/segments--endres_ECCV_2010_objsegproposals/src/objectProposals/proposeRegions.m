@@ -2,9 +2,9 @@ function [final_regions res] = processReg2Proposals(image_data, region_data)
 
 % function_root = which('generate_proposals.m');
 % function_root = function_root(1:end-length('generate_proposals.m'));
-function_root = '/v/filer4b/v17q003/yjlee/code/proposals/';
+function_root = fileparts(which(mfilename));
 
-load(fullfile(function_root, 'classifiers', 'pairwise_classifier_final.mat'), 'classifier');
+load(fullfile(function_root, '..', '..', 'classifiers', 'pairwise_classifier_final.mat'), 'classifier');
 
 regions = region_data.regions;
 bndinfo_all = image_data.occ.bndinfo_all;

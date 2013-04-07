@@ -221,8 +221,8 @@ gvs = cat(2, gc(:, 1), sum(gc(:, 2:4), 2), gc(:, 5));
 [val, glab] = max(gvs, [], 2);
 if ~exist('depthinfo', 'var') || isempty(depthinfo)
     try
-%       tmp = load('contactdt.mat');
-        tmp = load('/v/filer4b/v17q003/yjlee/code/proposals/src/iccv07Final/src/contactdt.mat');
+      tmp = load('contactdt.mat');
+%         tmp = load('/v/filer4b/v17q003/yjlee/code/proposals/src/iccv07Final/src/contactdt.mat');
       dt = tmp.contactdt;
     catch
       tmp = load('../iccv07/data4/contactTrainData.mat');

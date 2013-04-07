@@ -31,7 +31,7 @@ if ~exist('adjlist', 'var') || ~exist('edata', 'var') || isempty(adjlist) || ise
     [edata, adjlist] = mcmcGetEdgeData(imsegs, spdata);
 end    
 
-imdata = mcmcComputeImageData(im, imsegs);
+imdata = mcmcComputeImageData(im, imsegs);                         % random
 
 if ~exist('smaps', 'var') || isempty(smaps)       
     eclassifier = classifiers.eclassifier; 
@@ -45,7 +45,7 @@ if ~exist('smaps', 'var') || isempty(smaps)
         pE = test_boosted_dt_mc(eclassifier, edata);
         pE = 1 ./ (1+exp(ecal(1)*pE+ecal(2)));
     end
-    smaps = generateMultipleSegmentations2(pE, adjlist, imsegs.nseg, nsegments);
+    smaps = generateMultipleSegmentations2(pE, adjlist, imsegs.nseg, nsegments);    % random
 end
 
 

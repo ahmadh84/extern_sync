@@ -26,7 +26,6 @@ function [Priors, Mu, Sigma] = EM_init_kmeans(Data, nbStates)
 %Use of the 'kmeans' function from the MATLAB Statistics toolbox
 % [Data_id, Centers] = kmeans(Data', nbStates); 
 
-addpath('/v/filer4b/v37q001/yjlee/project/');
 [Data_id, Centers] = kmeansML(nbStates, Data); 
 Data_id = Data_id';
 Centers = Centers';

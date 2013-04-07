@@ -2,9 +2,9 @@ function ranking_feats = getRegionAppearance(image_data, final_regions)
 
 % function_root = which('generate_proposals.m');
 % function_root = function_root(1:end-length('generate_proposals.m'));
-function_root = '/v/filer4b/v17q003/yjlee/code/proposals/';
+function_root = fileparts(which(mfilename));
 
-load(fullfile(function_root,'classifiers','subregionClassifier_mix.mat'), 'classifier')
+load(fullfile(function_root, '..', '..', 'classifiers','subregionClassifier_mix.mat'), 'classifier')
 
 %load(fullfile(sprintf('%s/tc2/', dataset), [bn '_tc']),'textonim','colorim');
 %load(fullfile(sprintf('%s/bg', dataset), [bn '_bg']), 'object_maps');
