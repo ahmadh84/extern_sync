@@ -1,4 +1,4 @@
-function f = compute_error_metric(masks, GT, params, type)
+function f = compute_error_metric(masks, GT, params, type, gt_force_binary)
 % Can compute different error measures given an output mask and a GT. It
 % can also compute errors for multiple masks at the same time. The output
 % is a vector of error scores of length N where N is the number of masks 
@@ -30,6 +30,9 @@ function f = compute_error_metric(masks, GT, params, type)
 %       TP/(FP+FN+TP) OR intersection/union. 'intersect_gt' computes the 
 %       precision TP/(FP+TP). 'incorrect_pixels' computes FP+FN i.e. number 
 %       of incorrect pixels.
+%
+%   gt_force_binary: if this optional parameter is true then the GT is
+%       considered to be binary.
 
     % if GT has a third dimension, pick the first layer
     if ndims(GT) == 3
@@ -37,8 +40,7 @@ function f = compute_error_metric(masks, GT, params, type)
     end
     
     % find what sort of GT is it
-    gt_vals = unique(GT);
-    if numel(gt_vals) <= 2;
+    if exist('gt_force_binary', 'var') == 1 && gt_force_binary
         % if GT is binary
 %         assert(any(gt_vals == 0), ...
 %             'The GT provided has no background (0 values)');

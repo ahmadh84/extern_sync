@@ -1,12 +1,26 @@
-function computeRegionProposals(videoName, data_dir)
+function computeRegionProposals(videoName, data_dir, num_tries)
 
     curr_dir = fileparts(which(mfilename));
 
+    videoDir = [fullfile(data_dir, videoName) '/'];  % path to the video
+    
     addpath(fullfile(curr_dir, '..', '..', '..', 'segments--endres_ECCV_2010_objsegproposals'));
 
     outDir = [curr_dir, '/../../data/regionProposals/' videoName '/'];    % output directory
-    videoDir = [fullfile(data_dir, videoName) '/'];  % path to the video
+    if exist('num_tries','var') ~= 1
+        num_tries = 1;
+    end
+    
+   for idx = 1:num_tries
+       curr_outDir = outDir;
+       if num_tries > 1
+           curr_outDir = [curr_outDir, sprintf('test_%02d', idx), '/'];
+       end
+       runRegionProposals(videoDir, curr_outDir);
+   end
+end
 
+function runRegionProposals(videoDir, outDir)
     if exist(outDir, 'dir') ~= 7
         mkdir(outDir);
     end
@@ -23,6 +37,6 @@ function computeRegionProposals(videoName, data_dir)
         imname = d(i).name;
 
         [proposals superpixels image_data unary] = generate_proposals([videoDir imname]);
-        save('-v7',[outDir  imname '.mat'], 'proposals', 'superpixels', 'unary');
+        save('-v7',[outDir  imname '.mat'], 'proposals', 'superpixels', 'image_data', 'unary');
     end
 end
