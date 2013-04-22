@@ -27,7 +27,7 @@ end
 total_time = 0;
 tic;
 
-im = double(imread(imgFile)) / 255;
+im = im2double(imread(imgFile));
 [tx, ty, nchan] = size(im);
 orig_sz = [tx, ty];
 
