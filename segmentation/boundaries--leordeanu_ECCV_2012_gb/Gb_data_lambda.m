@@ -125,12 +125,12 @@ D = Ms(:, 1) .* Ms(:, 4) - Ms(:, 2) .* Ms(:, 2);
 f = find(Ms(:, 2) ~= 0);
 
 gb(:) = Ms(:, 1);
-gb(f) = T/2 + sqrt((T .^ 2 ) /4 - D);
+gb(f) = T(f)/2 + sqrt((T(f) .^ 2 ) /4 - D(f));
 
 or_C(:, 1) = 0;
-or_C(f, 1) = -Ms(:, 2);
+or_C(f, 1) = -Ms(f, 2);
 or_C(:, 2) = 1;
-or_C(f, 2) = gb(:) - Ms(:, 1);
+or_C(f, 2) = gb(f) - Ms(f, 1);
 
 
 Norm = sqrt(or_C(:, 1) .^ 2 + or_C(:, 2) .^2);
