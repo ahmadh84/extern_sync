@@ -1,0 +1,4 @@
+cd marple2
+mogrify -format ppm *.jpg
+rm *.jpg
+cd ..
