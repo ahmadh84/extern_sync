@@ -14,7 +14,7 @@ function computeBPLR(videoName, grid_space, data_dir)
     magnif = 1.1;
     min_elem_scale = 4;
 
-    outdir = [curr_dir, '/../../data/bplr/' videoName '/'];
+    outdir = ['/data/iccv_2013/segments--lee_ICCV_2011_keyvidobjseg/data/bplr/' num2str(grid_space) '/' videoName '/'];
     imdir = [fullfile(data_dir, videoName) '/'];
 
     if exist(outdir, 'dir') ~= 7
