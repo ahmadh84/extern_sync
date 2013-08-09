@@ -4,3 +4,6 @@
 [submodule "graph_algos/matlab_bgl"]
 	path = graph_algos/matlab_bgl
 	url = git://github.com/dgleich/matlab-bgl.git
+[submodule "segmentation/boundaries--lim_CVPR_2013_sketchtokens"]
+	path = segmentation/boundaries--lim_CVPR_2013_sketchtokens
+	url = git://github.com/joelimlimit/SketchTokens.git
