@@ -2,9 +2,13 @@
 b = rand(5,1);
 %fprintf('The columns should be equal:\n');
 r = [solve_triu(T,b) T\b];
-assert(all(abs(r(:,1) - r(:,2)) < 1e-10))
+if ~all(abs(r(:,1) - r(:,2)) < 1e-10)
+	error('solve_triu failed')
+end
 r = [solve_tril(T',b) T'\b];
-assert(all(abs(r(:,1) - r(:,2)) < 1e-10))
+if ~all(abs(r(:,1) - r(:,2)) < 1e-10)
+	error('solve_tril failed')
+end
 fprintf('Verified that solve_triu and solve_tril results match backslash.\n');
 
 d = 100;

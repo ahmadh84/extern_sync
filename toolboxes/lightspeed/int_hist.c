@@ -8,7 +8,7 @@
 void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
 {
-  int rows, cols, len, i, bins;
+  mwSize len, i, bins;
   double *indata, *outdata;
 
   if((nrhs < 1) || (nrhs > 2))
@@ -19,10 +19,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
    * mxGetM returns int  (rows)
    * mxGetN returns int  (cols)
    */
-  rows = mxGetM(prhs[0]);
-  cols = mxGetN(prhs[0]);
   indata = mxGetPr(prhs[0]);
-  len = rows*cols;
+  len = mxGetNumberOfElements(prhs[0]);
 
   if(mxIsSparse(prhs[0]))
     mexErrMsgTxt("Cannot handle sparse matrices.  Sorry.");

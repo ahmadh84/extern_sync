@@ -3,6 +3,9 @@
 #include "mex.h"
 #include <string.h>
 
+#ifdef BLAS64
+#include "blas.h"
+#else
 #ifdef UNDERSCORE_LAPACK_CALL
 /* Thanks to Ruben Martinez-Cantin */
 extern int dtrsm_(char *side, char *uplo, char *transa, char *diag, 
@@ -13,11 +16,15 @@ extern int dtrsm(char *side, char *uplo, char *transa, char *diag,
 		  int *m, int *n, double *alpha, double *a, int *lda, 
 		  double *b, int *ldb);
 #endif
+#endif
 
 void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
 {
-  int m,n;
+  mwSize m,n;
+#ifndef BLAS64
+	int im,in;
+#endif
   double *T,*b,*x;
   char side='L',uplo='L',trans='N',diag='N';
   double one = 1;
@@ -56,13 +63,17 @@ void mexFunction(int nlhs, mxArray *plhs[],
   /* copy b into x to speed up memory access */
   memcpy(x,b,m*n*sizeof(double));
   b = x;
-
-#ifdef UNDERSCORE_LAPACK_CALL
-  dtrsm_(&side,&uplo,&trans,&diag,&m,&n,&one,T,&m,x,&m);
-#else
+#ifdef BLAS64
   dtrsm(&side,&uplo,&trans,&diag,&m,&n,&one,T,&m,x,&m);
+#else
+	im = (int)m;
+	in = (int)n;
+#ifdef UNDERSCORE_LAPACK_CALL
+  dtrsm_(&side,&uplo,&trans,&diag,&im,&in,&one,T,&im,x,&im);
+#else
+  dtrsm(&side,&uplo,&trans,&diag,&im,&in,&one,T,&im,x,&im);
 #endif
-
+#endif
 }
 
 #if 0

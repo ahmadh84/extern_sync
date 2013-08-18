@@ -205,7 +205,7 @@ double gammaln2(double x, double d)
   #define M_lnPI 1.14472988584940
   double r = d*(d-1)/4*M_lnPI;
   int i;
-  for(i=0; i<d; i++) r += gammaln(x + (1-i)/2);
+  for(i=0; i<d; i++) r += gammaln(x - 0.5*i);
   return r;
 }
 
@@ -256,8 +256,8 @@ double digamma(double x)
 {
   double neginf = -INFINITY;
   static const double c = 12,
-    d1 = -0.57721566490153286,
-    d2 = 1.6449340668482264365, /* pi^2/6 */
+    digamma1 = -0.57721566490153286,
+    trigamma1 = 1.6449340668482264365, /* pi^2/6 */
     s = 1e-6,
     s3 = 1./12,
     s4 = 1./120,
@@ -293,7 +293,7 @@ double digamma(double x)
     return digamma(1-x) + M_PI/tan(-M_PI*x);
   }
   /* Use Taylor series if argument <= S */
-  if(x <= s) return d1 - 1/x + d2*x;
+  if(x <= s) return digamma1 - 1/x + trigamma1*x;
   /* Reduce to digamma(X + N) where (X + N) >= C */
   result = 0;
   while(x < c) {
@@ -335,13 +335,13 @@ double trigamma(double x)
   double neginf = -INFINITY,
     small = 1e-4,
     large = 8,
-    c = 1.6449340668482264365, /* pi^2/6 = Zeta(2) */
-    c1 = -2.404113806319188570799476,  /* -2 Zeta(3) */
-    b2 =  1./6,
-    b4 = -1./30,
-    b6 =  1./42,
-    b8 = -1./30,
-    b10 = 5./66;
+    trigamma1 = 1.6449340668482264365, /* pi^2/6 = Zeta(2) */
+    tetragamma1 = -2.404113806319188570799476,  /* -2 Zeta(3) */
+    b2 =  1./6,  /* B_2 */
+    b4 = -1./30, /* B_4 */
+    b6 =  1./42, /* B_6 */
+    b8 = -1./30, /* B_8 */
+    b10 = 5./66; /* B_10 */
   double result;
   /* Illegal arguments */
   if((x == neginf) || isnan(x)) {
@@ -361,7 +361,7 @@ double trigamma(double x)
   }
   /* Use Taylor series if argument <= small */
   if(x <= small) {
-    return 1/(x*x) + c + c1*x;
+    return 1/(x*x) + trigamma1 + tetragamma1*x;
   }
   result = 0;
   /* Reduce to trigamma(x+n) where ( X + N ) >= B */
@@ -379,6 +379,61 @@ double trigamma(double x)
     t = (b4 + r*(b6 + r*(b8 + r*b10)));
     result += 0.5*r + (1 + r*(b2 + r*t))/x;
 #endif
+  }
+  return result;
+}
+
+/* Evaluate the tetragamma function (the derivative of the trigamma function)
+ */
+double tetragamma(double x)
+{
+  double neginf = -INFINITY,
+    small = 1e-4,
+    large = 8,
+    tetragamma1 = -2.404113806319188570799476,  /* -2 Zeta(3) */
+		pentagamma1 = 6.49393940226682914909602217, /* 6 Zeta(4) */
+    b2 =  1./6,
+    b4 = -1./30,
+    b6 =  1./42,
+    b8 = -1./30,
+    b10 = 5./66;
+  double result;
+  /* Illegal arguments */
+  if((x == neginf) || isnan(x)) {
+    return NAN;
+  }
+  /* Singularities */
+  if((x <= 0) && (floor(x) == x)) {
+    return neginf;
+  }
+  /* Negative values */
+  /* Use the derivative of the trigamma reflection formula:
+   * -trigamma(-x) = trigamma(x+1) - (pi*csc(pi*x))^2
+   * tetragamma(-x) = tetragamma(x+1) + 2*pi^3*cos(pi*x)/sin(pi*x)^3
+   */
+  if(x < 0) {
+		double pix = M_PI*x;
+		double cospix = cos(pix);
+    double cscpix = M_PI/sin(pix);
+		double cscpix3 = cscpix*cscpix*cscpix;
+    return tetragamma(1-x) + 2*cscpix3*cospix;
+  }
+  /* Use Taylor series if argument <= small */
+  if(x <= small) {
+    return -2/(x*x*x) + tetragamma1 + pentagamma1*x;
+  }
+  result = 0;
+  /* Reduce to tetragamma(x+n) where ( X + N ) >= B */
+  while(x < large) {
+    result -= 2/(x*x*x);
+    x++;
+  }
+  /* Apply asymptotic formula when X >= B */
+  /* This expansion can be computed in Maple via asympt(Psi(2,x),x) */
+  if(x >= large) {
+    double r = 1/(x*x), t;
+    t = (5*b4 + r*(7*b6 + r*(9*b8 + r*11*b10)));
+    result -= r/x + r*(1 + r*(3*b2 + r*t));
   }
   return result;
 }

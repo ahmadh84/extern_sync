@@ -2,8 +2,8 @@
  * The uninitialized version runs nearly twice as fast.
  */
 /*
-mex.bat -c mexutil.c
-mex.bat xones.c mexutil.obj
+mex -c mexutil.c
+mex xones.c mexutil.obj
 */
 
 #include "mexutil.h"

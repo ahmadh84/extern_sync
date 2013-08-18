@@ -7,6 +7,7 @@
  *
  * On Pentium 4, VC gives better results:
  * cl /O2 /G7 /Oi- test_flops.c
+ * (omit /G7 for VS2008)
  * /Oi- disables intrinsic functions, making exp faster but sqrt slower.
  * These options don't seem to help: /arch:SSE
  *
@@ -43,6 +44,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
   clock_t t,t1,t2;
   clock_t t_loop,t_mul;
   double a[N],b[N],c[N];
+  double dummy = 0;
 
   for(i=0;i<N;i++) { b[i]=i; c[i] = N-i; }
 #if 0
@@ -54,22 +56,38 @@ void mexFunction(int nlhs, mxArray *plhs[],
   t_loop = 0;
 #endif
   t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = b[i]*c[i]; t=clock()-t-t_loop;
-  printf("time for multiply: \t%d\n", t);
+  printf("time for multiply: \t%d\tflops=1\n", t);
+  dummy += a[0];
   t_mul = t;
   t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = b[i]+c[i]; t=clock()-t-t_loop;
-  printf("time for add: \t%d\n", t);
+  printf("time for add: \t%d\tflops=1\n", t);
+  dummy += a[0];
+  t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = abs(b[i]); t=clock()-t-t_loop;
+  printf("time for abs: \t%d\tflops=%g\n", t, (double)t/t_mul);
+  dummy += a[0];
   t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = (b[i]<c[i]); t=clock()-t-t_loop;
   printf("time for <: \t%d\tflops=%g\n", t, (double)t/t_mul);
+  dummy += a[0];
   t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = (b[i]==c[i]); t=clock()-t-t_loop;
   printf("time for ==: \t%d\tflops=%g\n", t, (double)t/t_mul);
+  dummy += a[0];
   t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = b[i]/c[i]; t=clock()-t-t_loop;
   printf("time for /: \t%d\tflops=%g\n", t, (double)t/t_mul);
+  dummy += a[0];
   t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = sqrt(b[i]); t=clock()-t-t_loop;
   printf("time for sqrt: \t%d\tflops=%g\n", t, (double)t/t_mul);
-  t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = exp(b[i]); t=clock()-t-t_loop;
-  printf("time for exp: \t%d\tflops=%g\n", t, (double)t/t_mul);
+  dummy += a[0];
   t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = log(b[i]); t=clock()-t-t_loop;
   printf("time for log: \t%d\tflops=%g\n", t, (double)t/t_mul);
-  t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = pow(b[i],c[i]); t=clock()-t-t_loop;
-  printf("time for pow: \t%d\tflops=%g\n", t, (double)t/t_mul);
+  dummy += a[0];
+  if(1){
+    /* slow */
+    t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = exp(b[i]); t=clock()-t-t_loop;
+    printf("time for exp: \t%d\tflops=%g\n", t, (double)t/t_mul);
+    dummy += a[0];
+    t=clock(); for(j=0;j<M;j++) for(i=0;i<N;i++) a[i] = pow(b[i],c[i]); t=clock()-t-t_loop;
+    printf("time for pow: \t%d\tflops=%g\n", t, (double)t/t_mul);
+    dummy += a[0];
+  }
+  printf("dummy value: %g\n", dummy);
 }

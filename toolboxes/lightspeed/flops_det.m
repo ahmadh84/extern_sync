@@ -1,6 +1,6 @@
 function f = flops_det(n)
 % FLOPS_DET     Flops for matrix determinant.
-% FLOPS_DET(n) returns the number of flops for det(eye(n)).
+% FLOPS_DET(n) returns the number of flops for det(rand(n,n)).
 
 if n == 1
   f = 1;

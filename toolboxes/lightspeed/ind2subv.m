@@ -6,6 +6,7 @@ function sub = ind2subv(siz,index)
 % as rows.
 
 % Written by Tom Minka
+% Part of Tom Minka's lightspeed package.
 % (c) Microsoft Corporation. All rights reserved.
 
 n = length(siz);

@@ -5,11 +5,12 @@
  */
 #include "mex.h"
 #include "util.h"
+#include <string.h>
 
-void MultiRand(double *p, int len, int n, double *result)
+void MultiRand(double *p, mwSize len, mwSize n, double *result)
 {
   double z = 1;
-  int i;
+  mwSize i;
   for(i=1;i<len;i++) {
     int r = BinoRand(*p/z, n);
     *result++ = r;
@@ -27,8 +28,8 @@ void MultiRand(double *p, int len, int n, double *result)
 void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
 {
-  int rows, cols, n, i;
-  double *p, *r;
+  mwSize rows, cols, n, i;
+  double *indata, *outdata;
 
   if(nrhs != 2)
     mexErrMsgTxt("Usage: h = sample_hist(p, n)");
@@ -40,7 +41,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
    */
   rows = mxGetM(prhs[0]);
   cols = mxGetN(prhs[0]);
-  p = mxGetPr(prhs[0]);
+  indata = mxGetPr(prhs[0]);
   if(mxGetNumberOfElements(prhs[1]) != 1)
     mexErrMsgTxt("n is not scalar");
   n = (int)*mxGetPr(prhs[1]);
@@ -50,11 +51,11 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
   /* plhs[0] is first output */
   plhs[0] = mxCreateDoubleMatrix(rows, cols, mxREAL);
-  r = mxGetPr(plhs[0]);
+  outdata = mxGetPr(plhs[0]);
   for(i=0;i<cols;i++) {
-    MultiRand(p, rows, n, r);
-    p += rows;
-    r += rows;
+    MultiRand(indata, rows, n, outdata);
+    indata += rows;
+    outdata += rows;
   }
 }
 

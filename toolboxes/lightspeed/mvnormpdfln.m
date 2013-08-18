@@ -1,6 +1,6 @@
-function p = normpdfln(x, m, S, V)
-% NORMPDFLN    log of multivariate normal density.
-%   See NORMPDF for argument description.
+function p = mvnormpdfln(x, m, S, V)
+% MVNORMPDFLN    log of multivariate normal density.
+%   See MVNORMPDF for argument description.
 
 log2pi = 1.83787706640935;
 [d, n] = size(x);

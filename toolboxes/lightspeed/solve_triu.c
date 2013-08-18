@@ -1,9 +1,24 @@
-/* How to write MEX files that call LAPACK:
- * http://www.mathworks.com/access/helpdesk/help/techdoc/matlab_external/f13120.html#f45091
+/* solve_triu.c
+ * Written by Tom Minka
  */
 #include "mex.h"
 #include <string.h>
 
+/* How to write MEX files that call LAPACK:
+ * http://www.mathworks.com/access/helpdesk/help/techdoc/matlab_external/f13120.html#f45091
+ */
+/* In R2009a, the blas signatures have been changed to take ptrdiff_t instead of int. We call this BLAS64. */
+/* various ways to detect R2009a:
+ * new definitions in matrix.h:
+ * mxCreateScalarDouble
+ * MATHWORKS_MATRIX_MATRIX_PUB_FWD_H
+ * MATHWORKS_MATRIX_MXARRAY_PUB_FWD_H
+ * MATHWORKS_MATRIX_VAGUE_MXARRAY_HPP
+ * existence of blascompat32.h
+ */
+#ifdef BLAS64
+#include "blas.h"
+#else
 #ifdef UNDERSCORE_LAPACK_CALL
 /* Thanks to Ruben Martinez-Cantin */
 extern int dtrsm_(char *side, char *uplo, char *transa, char *diag, 
@@ -14,11 +29,16 @@ extern int dtrsm(char *side, char *uplo, char *transa, char *diag,
 		  int *m, int *n, double *alpha, double *a, int *lda, 
 		  double *b, int *ldb);
 #endif
+#endif
 
 void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
 {
-  int m,n;
+  mwSize m,n;
+	ptrdiff_t m64, n64;
+#ifndef BLAS64
+	int im,in;
+#endif
   double *T,*b,*x;
   char side='L',uplo='U',trans='N',diag='N';
   double one = 1;
@@ -57,12 +77,19 @@ void mexFunction(int nlhs, mxArray *plhs[],
   /* copy b into x to speed up memory access */
   memcpy(x,b,m*n*sizeof(double));
   b = x;
-#ifdef UNDERSCORE_LAPACK_CALL
-  dtrsm_(&side,&uplo,&trans,&diag,&m,&n,&one,T,&m,x,&m);
+#ifdef BLAS64
+	m64 = m;
+	n64 = n;
+  dtrsm(&side,&uplo,&trans,&diag,&m64,&n64,&one,T,&m64,x,&m64);
 #else
-  dtrsm(&side,&uplo,&trans,&diag,&m,&n,&one,T,&m,x,&m);
+	im = (int)m;
+	in = (int)n;
+#ifdef UNDERSCORE_LAPACK_CALL
+  dtrsm_(&side,&uplo,&trans,&diag,&im,&in,&one,T,&im,x,&im);
+#else
+  dtrsm(&side,&uplo,&trans,&diag,&im,&in,&one,T,&im,x,&im);
 #endif
-
+#endif
 }
 
 #if 0

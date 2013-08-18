@@ -1,12 +1,13 @@
 % Lightspeed Toolbox.  
 % Efficient operations for Matlab programming.
-% Version 2.2   17-Dec-2007
+% Version 2.6   05-May-2011
 % By Tom Minka
 % (c) Microsoft Corporation. All rights reserved. 
 %
 % Matrix algebra
 %   repmat           - Fast replacement for matlab's repmat.
 %   xrepmat          - Matlab's original repmat.
+%   setnonzeros      - Fast creation of sparse matrix.
 %   row_sum          - Sum for each row.  Faster than 'sum'.
 %   scale_rows       - Scale each row of a matrix.
 %   scale_cols       - Scale each column of a matrix.
@@ -19,11 +20,12 @@
 %   inv_posdef       - Invert positive definite matrix.
 %
 % Statistics
-%   normpdf          - Multivariate normal density.
-%   normpdfln        - Log of multivariate normal density.
+%   mvnormpdf        - Multivariate normal density.
+%   mvnormpdfln      - Log of multivariate normal density.
 %   normcdf          - Normal cumulative distribution.
 %   normcdfln        - Log of normal cumulative distribution.
 %   normcdflogit     - Logit of normal cumulative distribution.
+%   invnormcdf       - Normal quantile function.
 %   wishpdf          - Wishart probability density function.
 %   wishpdfln        - Log of Wishart probability density function.
 %   sample           - Sample from categorical distribution.
@@ -46,6 +48,7 @@
 %   gammaln          - Fast replacement for matlab's gammaln.
 %   digamma          - Derivative of gammaln.
 %   trigamma         - Derivative of digamma.
+%   tetragamma       - Derivative of trigamma.
 %   ndsum            - Sum over multiple dimensions.
 %   ndmax            - Maximum over multiple dimensions.
 %   ndlogsumexp      - Sum over multiple dimensions in the log domain.

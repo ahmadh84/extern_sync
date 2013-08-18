@@ -2,17 +2,18 @@
 
 /* Functions to create uninitialized arrays. */
 
-mxArray *mxCreateNumericArrayE(int ndim, const int *dims, 
-         mxClassID class, mxComplexity ComplexFlag)
+mxArray *mxCreateNumericArrayE(mwSize ndim, const mwSize *dims, 
+         mxClassID classid, mxComplexity ComplexFlag)
 {
   mxArray *a;
-  int i, *dims1 = mxMalloc(ndim*sizeof(int));
-  size_t sz = 1;
+  mwSize i;
+  mwSize *dims1 = mxMalloc(ndim*sizeof(mwSize));
+  mwSize sz = 1;
   for(i=0;i<ndim;i++) {
     sz *= dims[i];
     dims1[i] = 1;
   }
-  a = mxCreateNumericArray(ndim,dims1,class,ComplexFlag);
+  a = mxCreateNumericArray(ndim,dims1,classid,ComplexFlag);
   sz *= mxGetElementSize(a);
   mxSetDimensions(a, dims, ndim);
   mxFree(dims1);
@@ -22,11 +23,11 @@ mxArray *mxCreateNumericArrayE(int ndim, const int *dims,
   }
   return a;
 }
-mxArray *mxCreateNumericMatrixE(int m, int n, mxClassID class, 
+mxArray *mxCreateNumericMatrixE(mwSize m, mwSize n, mxClassID classid, 
 				mxComplexity ComplexFlag)
 {
-  size_t sz = m*n*sizeof(double);
-  mxArray *a = mxCreateNumericMatrix(1, 1, class, ComplexFlag);
+  mwSize sz = m*n*sizeof(double);
+  mxArray *a = mxCreateNumericMatrix(1, 1, classid, ComplexFlag);
   mxSetM(a,m);
   mxSetN(a,n);
   mxSetPr(a, mxRealloc(mxGetPr(a),sz));
@@ -35,7 +36,7 @@ mxArray *mxCreateNumericMatrixE(int m, int n, mxClassID class,
   }
   return a;
 }
-mxArray *mxCreateDoubleMatrixE(int m, int n, 
+mxArray *mxCreateDoubleMatrixE(mwSize m, mwSize n, 
 			       mxComplexity ComplexFlag)
 {
   return mxCreateNumericMatrixE(m,n,mxDOUBLE_CLASS,ComplexFlag);

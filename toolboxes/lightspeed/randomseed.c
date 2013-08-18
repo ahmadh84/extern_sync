@@ -7,8 +7,8 @@
 void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
 {
-  int ndims, len, i;
-  int *dims;
+  mwSize ndims, len;
+  mwSize *dims;
   double *indata, *outdata;
   long ix,iy,iz;
 
@@ -20,7 +20,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
      * mxGetPr returns double*  (data, col-major)
      */
     ndims = mxGetNumberOfDimensions(prhs[0]);
-    dims = (int*)mxGetDimensions(prhs[0]);
+    dims = (mwSize*)mxGetDimensions(prhs[0]);
     indata = mxGetPr(prhs[0]);
     len = mxGetNumberOfElements(prhs[0]);
 
@@ -36,7 +36,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
     }
   }
   ndims = 1;
-  dims = (int*)mxMalloc(sizeof(int));
+  dims = (mwSize*)mxMalloc(sizeof(mwSize));
   dims[0] = 3;
   /* plhs[0] is first output */
   plhs[0] = mxCreateNumericArray(ndims, dims, mxDOUBLE_CLASS, mxREAL);

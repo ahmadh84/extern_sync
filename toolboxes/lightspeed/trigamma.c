@@ -8,8 +8,8 @@
 void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
 {
-  int ndims, len, i, nnz;
-  int *dims;
+  mwSize ndims, len, i, nnz;
+  mwSize *dims;
   double *indata, *outdata;
 
   if((nrhs != 1) || (nlhs > 1))    
@@ -21,7 +21,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
    * mxGetN returns int  (cols)
    */
   ndims = mxGetNumberOfDimensions(prhs[0]);
-  dims = (int*)mxGetDimensions(prhs[0]);
+  dims = (mwSize*)mxGetDimensions(prhs[0]);
   indata = mxGetPr(prhs[0]);
   len = mxGetNumberOfElements(prhs[0]);
 

@@ -1,27 +1,27 @@
 /* compile with: 
       Windows: mex randbinom.c util.obj
-      Others:  cmex bino_sample.c util.o -lm
+      Others:  cmex randbinom.c util.o -lm
  */
-#include "mex.h"
+#include "mexutil.h"
 #include "util.h"
 
 void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
 {
-  int rows, cols, n, i;
-  double *p, *r;
+  mwSize ndims, *dims, len, n, i;
+  double *indata, *outdata;
 
   if(nrhs != 2)
     mexErrMsgTxt("Usage: r = bino_sample(p, n)");
 
   /* prhs[0] is first argument.
    * mxGetPr returns double*  (data, col-major)
-   * mxGetM returns int  (rows)
-   * mxGetN returns int  (cols)
    */
-  rows = mxGetM(prhs[0]);
-  cols = mxGetN(prhs[0]);
-  p = mxGetPr(prhs[0]);
+  ndims = mxGetNumberOfDimensions(prhs[0]);
+  dims = (mwSize*)mxGetDimensions(prhs[0]);
+  indata = mxGetPr(prhs[0]);
+  len = mxGetNumberOfElements(prhs[0]);
+
   if(mxGetNumberOfElements(prhs[1]) != 1)
     mexErrMsgTxt("n is not scalar");
   n = (int)*mxGetPr(prhs[1]);
@@ -30,10 +30,10 @@ void mexFunction(int nlhs, mxArray *plhs[],
     mexErrMsgTxt("Cannot handle sparse matrices.  Sorry.");
 
   /* plhs[0] is first output */
-  plhs[0] = mxCreateDoubleMatrix(rows, cols, mxREAL);
-  r = mxGetPr(plhs[0]);
-  for(i=0;i<rows*cols;i++) {
-    *r++ = BinoRand(*p++, n);
+  plhs[0] = mxCreateNumericArrayE(ndims, dims, mxDOUBLE_CLASS, mxREAL);
+  outdata = mxGetPr(plhs[0]);
+  for(i=0;i<len;i++) {
+    *outdata++ = BinoRand(*indata++, n);
   }
 }
 

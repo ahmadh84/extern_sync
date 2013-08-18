@@ -18,5 +18,6 @@ double gammaln2(double x, double d);
 double gammaln(double x);
 double digamma(double x);
 double trigamma(double x);
+double tetragamma(double x);
 
 unsigned *ismember_sorted(double *a, unsigned a_len, double *s, unsigned s_len);

@@ -1,8 +1,8 @@
 #include "mex.h"
 
-mxArray *mxCreateNumericArrayE(int ndim, const int *dims, 
-			       mxClassID class, mxComplexity ComplexFlag);
-mxArray *mxCreateNumericMatrixE(int m, int n, mxClassID class, 
+mxArray *mxCreateNumericArrayE(mwSize ndim, const mwSize *dims, 
+			       mxClassID classid, mxComplexity ComplexFlag);
+mxArray *mxCreateNumericMatrixE(mwSize m, mwSize n, mxClassID classid, 
 				mxComplexity ComplexFlag);
-mxArray *mxCreateDoubleMatrixE(int m, int n, 
+mxArray *mxCreateDoubleMatrixE(mwSize m, mwSize n, 
 			       mxComplexity ComplexFlag);

@@ -11,6 +11,8 @@ function index = subv2ind(siz,sub)
 % See also IND2SUBV, SUB2IND.
 
 % Written by Tom Minka
+% Part of Tom Minka's lightspeed package.
+% (c) Microsoft Corporation. All rights reserved.
 
 prev_cum_size = [1 cumprod(siz(1:end-1))];
 %index = (sub-1)*prev_cum_size' + 1;

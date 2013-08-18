@@ -12,6 +12,7 @@ function f = flops(fl)
 % Use FLOPS_DIV for ./ 
 % Use FLOPS_RANDNORM for randn
 % Use FLOPS_SQRT for sqrt
+% Use FLOPS_ABS for abs
 % Use FLOPS_POW for .^
 % Use FLOPS_EXP for exp
 % Use FLOPS_LOG for log, sin, and other special functions.

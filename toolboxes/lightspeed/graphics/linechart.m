@@ -17,6 +17,6 @@ x = 1:length(v);
 x = x(order);
 %fprintf('columns are');fprintf(' %d',x);fprintf('\n');
 
-labeled_curves(1:length(x),y,color,varargin{:});
+labeled_curves(1:length(x),y,'color',color,varargin{:});
 set(gca,'XTick',1:length(x),'XTickLabel',num2str(x'));
 axis_pct;

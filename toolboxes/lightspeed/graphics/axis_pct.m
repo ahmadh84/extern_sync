@@ -16,6 +16,7 @@ ax = [Inf -Inf Inf -Inf Inf -Inf];
 % find bounding box of plotted objects
 children = get(gca,'children');
 for child = children'
+	c = [Inf -Inf Inf -Inf Inf -Inf];
   if strcmp(get(child,'type'),'text')
     xyz = get(child,'position');
     % need to determine bounding box of the text
@@ -38,9 +39,7 @@ for child = children'
       x = x(x > 0);
       x = log10(x);
     end
-    if isempty(x)
-      c([1 2]) = 0;
-    else
+    if ~isempty(x)
       c([1 2]) = [min(x(:)) max(x(:))];
     end
     y = get(child,'ydata');
@@ -49,22 +48,18 @@ for child = children'
       y = y(y > 0);
       y = log10(y);
     end
-    if isempty(y)
-      c([3 4]) = 0;
-    else
+    if ~isempty(y)
       c([3 4]) = [min(y(:)) max(y(:))];
     end
     try
       z = get(child,'zdata');
       z = z(isfinite(z));
-      if isempty(z)
-	c([5 6]) = 0;
-      else
-	if strcmp(get(gca,'zscale'), 'log')
-	  z = z(z > 0);
-	  z = log10(z);
-	end
-	c([5 6]) = [min(z(:)) max(z(:))];
+      if ~isempty(z)
+				if strcmp(get(gca,'zscale'), 'log')
+					z = z(z > 0);
+					z = log10(z);
+				end
+				c([5 6]) = [min(z(:)) max(z(:))];
       end
     end
   end

@@ -94,7 +94,7 @@ border_cdf = interp1(datax,index,border);
 % this prevents the estimate from extending beyond the data limits.
 border_cdf(border<min(data)) = 1;
 border_cdf(border>max(data)) = n;
-plot(border,border_cdf)
+%plot(border,border_cdf)
 density = diff(border_cdf)./diff(border)/(n-1);
 
 if nargout == 0

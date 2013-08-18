@@ -79,15 +79,15 @@ if ~isstruct(y)
     y.(sprintf('V%d',i)) = a(i,:);
   end
 end
+fields = fieldnames(y);
 if isempty(color)
-  n = length(fieldnames(y));
+  n = length(fields);
   color = jet(n);
   color = hsv(n);
 end
 if ~isstruct(color)
   a = color;
   color = struct;
-  fields = fieldnames(y);
   if iscellstr(a)
     for i = 1:length(a)
       color.(fields{i}) = a{i};
@@ -97,15 +97,17 @@ if ~isstruct(color)
       color.(fields{i}) = a(i,:);
     end
   end
+else
+  %fields = fields(ismember(fields, fieldnames(color)));
 end
 if isempty(labels)
-  labels = fieldnames(y);
+  labels = fields;
 end
 
 lastx = struct;
 lasty = struct;
 h = [];
-for f = fieldnames(y)'
+for f = fields'
   field = char(f);
   if isstruct(x)
     thisx = x.(field);
@@ -113,7 +115,11 @@ for f = fieldnames(y)'
     thisx = x;
   end
   thisy = y.(field);
-  thiscolor = color.(field);
+	if ~isfield(color,field)
+		thiscolor = 'k';
+	else
+		thiscolor = color.(field);
+	end
   if ischar(thiscolor)
     h(end+1) = feval(plotfun,thisx,thisy,thiscolor);
     hold on
@@ -134,13 +140,12 @@ for f = fieldnames(y)'
 end
 hold off
 axis_pct;
-f = fieldnames(y);
-legend(h,labels)
+legend(h,labels,'location','best')
 if mobile_flag
   legend off
   hlab = mobile_text(labels{:});
   for i = 1:length(hlab)
-    set(hlab(i),'Position',[lastx.(f{i}) lasty.(f{i})]);
+    set(hlab(i),'Position',[lastx.(fields{i}) lasty.(fields{i})]);
   end
 end
 if nargout == 0

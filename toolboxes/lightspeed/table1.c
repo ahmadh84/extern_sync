@@ -3,10 +3,10 @@
 /* Returns the interpolated output value at index, i.e. (index, value)
  * using the known (inp, outp) pairs.
  */
-void table1(double *inp, double *outp, int length, double index,
-	    int output_length, double *value_return, int stride)
+void table1(double *inp, double *outp, mwSize length, double index,
+	    mwSize output_length, double *value_return, mwSize stride)
 {
-  int i,j;
+  mwSize i,j;
   double k;
   /* find the first element of inp greater than index */
 #if 1
@@ -54,7 +54,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
 {
   double *pr;
-  int length, data_length, nx, i;
+  mwSize length, data_length, nx, i;
 
   if((nrhs != 2) || (nlhs > 1)) mexErrMsgTxt("Usage: y = table1(tab, x)");
   pr = mxGetPr(prhs[0]);

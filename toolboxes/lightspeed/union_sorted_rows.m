@@ -22,9 +22,10 @@ else
   [c,i] = sortrows([a(~tf,:); b]);
   nc = rows(c);
   nb = rows(b);
-  na = rows(a);
-  b_match = i((nc-nb+1):nc);
-  a_match = zeros(1,na);
-  a_match(~tf) = i(1:(nc-nb));
-  a_match(tf) = b_match(loc(tf));
+  nau = nc-nb;
+  isFromA = zeros(nb,1);
+  isFromA(loc(tf)) = 1;
+  isFromA = [ones(nau,1); isFromA];
+  b_match = find(i > (nc-nb));
+  a_match = find(isFromA(i));
 end
