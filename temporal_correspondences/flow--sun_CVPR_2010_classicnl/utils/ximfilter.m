@@ -65,7 +65,7 @@ function B = ximfilter(A, H, varargin)
   end 
   
   if (isnumeric(bndry))
-    tmp = xrepmat(bndry(1), size(A) + padl + padh);
+    tmp = xrepmat_classicnl(bndry(1), size(A) + padl + padh);
     tmp(padl(1)+1:end-padh(1), padl(2)+1:end-padh(2)) = A;
     A = tmp;
     clear tmp;
@@ -78,8 +78,8 @@ function B = ximfilter(A, H, varargin)
         
       case 'replicate'
         sz = size(A);
-        idx1 = [xrepmat(1, 1, padl(1)), 1:sz(1), xrepmat(sz(1), 1, padh(1))];
-        idx2 = [xrepmat(1, 1, padl(2)), 1:sz(2), xrepmat(sz(2), 1, padh(2))];
+        idx1 = [xrepmat_classicnl(1, 1, padl(1)), 1:sz(1), xrepmat_classicnl(sz(1), 1, padh(1))];
+        idx2 = [xrepmat_classicnl(1, 1, padl(2)), 1:sz(2), xrepmat_classicnl(sz(2), 1, padh(2))];
       
       case 'circular'
         sz = size(A);

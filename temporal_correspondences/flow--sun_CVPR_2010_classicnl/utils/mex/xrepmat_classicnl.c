@@ -3,9 +3,9 @@
  */
 /*
 mex -c mexutil.c
-mex repmat.c mexutil.obj
+mex repmat_classicnl.c mexutil.obj
 to check for warnings:
-gcc -Wall -I/cygdrive/c/MATLAB6p1/extern/include -c repmat.c
+gcc -Wall -I/cygdrive/c/MATLAB6p1/extern/include -c repmat_classicnl.c
 */
 #include "mexutil.h"
 #include <string.h>
@@ -34,7 +34,7 @@ void memrep(char *dest, size_t chunk, int rep)
 #endif
 }
 
-void repmat(char *dest, const char *src, int ndim, int *destdimsize, 
+void repmat_classicnl(char *dest, const char *src, int ndim, int *destdimsize, 
 	    int *dimsize, const int *dims, int *rep) 
 {
   int d = ndim-1;
@@ -47,7 +47,7 @@ void repmat(char *dest, const char *src, int ndim, int *destdimsize,
   else {
     /* recursively repeat each slice of src */
     for(i=0;i<dims[d];i++) {
-      repmat(dest + i*destdimsize[d-1], src + i*dimsize[d-1], 
+      repmat_classicnl(dest + i*destdimsize[d-1], src + i*dimsize[d-1], 
 	     ndim-1, destdimsize, dimsize, dims, rep);
     }
     chunk = destdimsize[d-1]*dims[d];
@@ -69,7 +69,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
   int extra_rep = 1;
   int empty;
 
-  if(nrhs < 2) mexErrMsgTxt("Usage: repmat(A, [N M ...])");
+  if(nrhs < 2) mexErrMsgTxt("Usage: repmat_classicnl(A, [N M ...])");
   srcmat = prhs[0];
   if(mxIsSparse(srcmat)) {
     mexErrMsgTxt("Sorry, can't handle sparse matrices yet.");
@@ -140,12 +140,12 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
   src = (char*)mxGetData(srcmat);
   dest = (char*)mxGetData(plhs[0]);
-  repmat(dest,src,ndim,destdimsize,dimsize,dims,rep);
+  repmat_classicnl(dest,src,ndim,destdimsize,dimsize,dims,rep);
   if(ndimdest > ndim) memrep(dest,destdimsize[ndim-1],extra_rep);
   if(mxIsComplex(srcmat)) {
     src = (char*)mxGetPi(srcmat);
     dest = (char*)mxGetPi(plhs[0]);
-    repmat(dest,src,ndim,destdimsize,dimsize,dims,rep);
+    repmat_classicnl(dest,src,ndim,destdimsize,dimsize,dims,rep);
     if(ndimdest > ndim) memrep(dest,destdimsize[ndim-1],extra_rep);
   }
 }

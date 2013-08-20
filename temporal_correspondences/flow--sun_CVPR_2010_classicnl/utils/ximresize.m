@@ -69,8 +69,8 @@ function y = ximresize(x, nsz, method)
     rows = floor(rows); rows(rows < 1) = 1; rows(rows > sz(1)) = sz(1);
     cols = floor(cols); cols(cols < 1) = 1; cols(cols > sz(2)) = sz(2);
     
-    ind = xrepmat(rows, 1, length(cols)) + ...
-          xrepmat(sz(1) * (cols-1), length(rows), 1);
+    ind = xrepmat_classicnl(rows, 1, length(cols)) + ...
+          xrepmat_classicnl(sz(1) * (cols-1), length(rows), 1);
     
     y = x(ind);
     
@@ -83,8 +83,8 @@ function y = ximresize(x, nsz, method)
     rows = floor(rows); rows(rows < 1) = 1; rows(rows > nsz(1)) = nsz(1);
     cols = floor(cols); cols(cols < 1) = 1; cols(cols > nsz(2)) = nsz(2);
     
-    ind = xrepmat(rows, 1, length(cols)) + ...
-          xrepmat(nsz(1) * (cols-1), length(rows), 1);
+    ind = xrepmat_classicnl(rows, 1, length(cols)) + ...
+          xrepmat_classicnl(nsz(1) * (cols-1), length(rows), 1);
 
     A = sparse(ind(:), 1:numel(ind), ones(numel(ind), 1), prod(nsz), prod(sz));
     y = reshape(A * x(:), nsz);
@@ -103,34 +103,34 @@ function y = ximresize(x, nsz, method)
     calpha = cols - bcols;
 
     % bottom, bottom
-    ind = xrepmat(brows, 1, length(cols)) + ...
-          xrepmat(sz(1) * (bcols-1), length(rows), 1);
-    alpha = xrepmat(1 - ralpha, 1, length(cols)) .* ...
-            xrepmat(1 - calpha, length(rows), 1);
+    ind = xrepmat_classicnl(brows, 1, length(cols)) + ...
+          xrepmat_classicnl(sz(1) * (bcols-1), length(rows), 1);
+    alpha = xrepmat_classicnl(1 - ralpha, 1, length(cols)) .* ...
+            xrepmat_classicnl(1 - calpha, length(rows), 1);
     
     y = alpha .* x(ind);
 
     % top, bottom
-    ind = xrepmat(trows, 1, length(cols)) + ...
-          xrepmat(sz(1) * (bcols-1), length(rows), 1);
-    alpha = xrepmat(ralpha, 1, length(cols)) .* ...
-            xrepmat(1 - calpha, length(rows), 1);
+    ind = xrepmat_classicnl(trows, 1, length(cols)) + ...
+          xrepmat_classicnl(sz(1) * (bcols-1), length(rows), 1);
+    alpha = xrepmat_classicnl(ralpha, 1, length(cols)) .* ...
+            xrepmat_classicnl(1 - calpha, length(rows), 1);
     
     y = y + alpha .* x(ind);
 
     % bottom, top
-    ind = xrepmat(brows, 1, length(cols)) + ...
-          xrepmat(sz(1) * (tcols-1), length(rows), 1);
-    alpha = xrepmat(1 - ralpha, 1, length(cols)) .* ...
-            xrepmat(calpha, length(rows), 1);
+    ind = xrepmat_classicnl(brows, 1, length(cols)) + ...
+          xrepmat_classicnl(sz(1) * (tcols-1), length(rows), 1);
+    alpha = xrepmat_classicnl(1 - ralpha, 1, length(cols)) .* ...
+            xrepmat_classicnl(calpha, length(rows), 1);
     
     y = y + alpha .* x(ind);
 
     % top, top
-    ind = xrepmat(trows, 1, length(cols)) + ...
-          xrepmat(sz(1) * (tcols-1), length(rows), 1);
-    alpha = xrepmat(ralpha, 1, length(cols)) .* ...
-            xrepmat(calpha, length(rows), 1);
+    ind = xrepmat_classicnl(trows, 1, length(cols)) + ...
+          xrepmat_classicnl(sz(1) * (tcols-1), length(rows), 1);
+    alpha = xrepmat_classicnl(ralpha, 1, length(cols)) .* ...
+            xrepmat_classicnl(calpha, length(rows), 1);
     
     y = y + alpha .* x(ind);
 
@@ -149,10 +149,10 @@ function y = ximresize(x, nsz, method)
     calpha = cols - bcols;
 
     % bottom, bottom
-    ind = xrepmat(brows, 1, length(cols)) + ...
-          xrepmat(nsz(1) * (bcols-1), length(rows), 1);
-    alpha = xrepmat(1 - ralpha, 1, length(cols)) .* ...
-            xrepmat(1 - calpha, length(rows), 1);
+    ind = xrepmat_classicnl(brows, 1, length(cols)) + ...
+          xrepmat_classicnl(nsz(1) * (bcols-1), length(rows), 1);
+    alpha = xrepmat_classicnl(1 - ralpha, 1, length(cols)) .* ...
+            xrepmat_classicnl(1 - calpha, length(rows), 1);
     
     A = sparse(ind(:), 1:numel(ind), ones(numel(ind), 1));
     tmp = alpha .* x;
@@ -160,10 +160,10 @@ function y = ximresize(x, nsz, method)
     
 
     % top, bottom
-    ind = xrepmat(trows, 1, length(cols)) + ...
-          xrepmat(nsz(1) * (bcols-1), length(rows), 1);
-    alpha = xrepmat(ralpha, 1, length(cols)) .* ...
-            xrepmat(1 - calpha, length(rows), 1);
+    ind = xrepmat_classicnl(trows, 1, length(cols)) + ...
+          xrepmat_classicnl(nsz(1) * (bcols-1), length(rows), 1);
+    alpha = xrepmat_classicnl(ralpha, 1, length(cols)) .* ...
+            xrepmat_classicnl(1 - calpha, length(rows), 1);
     
     A = sparse(ind(:), 1:numel(ind), ones(numel(ind), 1));
     tmp = alpha .* x;
@@ -171,10 +171,10 @@ function y = ximresize(x, nsz, method)
 
 
     % bottom, top
-    ind = xrepmat(brows, 1, length(cols)) + ...
-          xrepmat(nsz(1) * (tcols-1), length(rows), 1);
-    alpha = xrepmat(1 - ralpha, 1, length(cols)) .* ...
-            xrepmat(calpha, length(rows), 1);
+    ind = xrepmat_classicnl(brows, 1, length(cols)) + ...
+          xrepmat_classicnl(nsz(1) * (tcols-1), length(rows), 1);
+    alpha = xrepmat_classicnl(1 - ralpha, 1, length(cols)) .* ...
+            xrepmat_classicnl(calpha, length(rows), 1);
     
     A = sparse(ind(:), 1:numel(ind), ones(numel(ind), 1));
     tmp = alpha .* x;
@@ -182,10 +182,10 @@ function y = ximresize(x, nsz, method)
 
 
     % top, top
-    ind = xrepmat(trows, 1, length(cols)) + ...
-          xrepmat(nsz(1) * (tcols-1), length(rows), 1);
-    alpha = xrepmat(ralpha, 1, length(cols)) .* ...
-            xrepmat(calpha, length(rows), 1);
+    ind = xrepmat_classicnl(trows, 1, length(cols)) + ...
+          xrepmat_classicnl(nsz(1) * (tcols-1), length(rows), 1);
+    alpha = xrepmat_classicnl(ralpha, 1, length(cols)) .* ...
+            xrepmat_classicnl(calpha, length(rows), 1);
     
     A = sparse(ind(:), 1:numel(ind), ones(numel(ind), 1));
     tmp = alpha .* x;

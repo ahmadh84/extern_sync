@@ -90,10 +90,10 @@ function M = convmtxn(F, sz, valid)
          repmat(fltpos - 1, nblks, 1);
   cols = reshape(repmat(1:nblks, blksz, 1), nelems, 1);
   vals = repmat(F(:), nblks, 1);
-%   rows = reshape(xrepmat(imgpos', blksz, 1), nelems, 1) + ...
-%          xrepmat(fltpos - 1, nblks, 1);
-%   cols = reshape(xrepmat(1:nblks, blksz, 1), nelems, 1);
-%   vals = xrepmat(F(:), nblks, 1);
+%   rows = reshape(xrepmat_classicnl(imgpos', blksz, 1), nelems, 1) + ...
+%          xrepmat_classicnl(fltpos - 1, nblks, 1);
+%   cols = reshape(xrepmat_classicnl(1:nblks, blksz, 1), nelems, 1);
+%   vals = xrepmat_classicnl(F(:), nblks, 1);
 
   % Pick out valid rows
   if (nargin > 2)

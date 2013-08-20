@@ -43,7 +43,7 @@ function [im1, im2, tu, tv] = read_flow_file(seqName, iSeq)
 % ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 % THIS SOFTWARE.        
 
-filePath = ['data' filesep]; % or the folder that you save the data
+filePath = ['~/data/videos/baker_IJCV_2011_middleburyof' filesep]; % or the folder that you save the data
 
 switch seqName
         
@@ -67,8 +67,8 @@ switch seqName
     case 'middle-other'
         % other sequence with GT provided
         
-        imgFilePath     = [filePath 'other-data/'];        
-        flowFilePath    = [filePath 'other-gt-flow/'];        
+        imgFilePath     = [filePath 'train/'];
+        flowFilePath    = [filePath 'train/'];
 
         subPath = {'Venus', 'Dimetrodon',   'Hydrangea',    'RubberWhale',...
                     'Grove2', 'Grove3', 'Urban2', 'Urban3', ...
