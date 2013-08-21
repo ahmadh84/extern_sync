@@ -40,4 +40,4 @@
 mex -O -c mexutil.c
 mex -O -c mex_tools.c
 mex -O -largeArrayDims sor.cpp
-mex -O xrepmat.c mexutil.o     
+mex -O xrepmat_classicnl.c mexutil.o
