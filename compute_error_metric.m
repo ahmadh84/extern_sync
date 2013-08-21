@@ -1,4 +1,5 @@
-function f = compute_error_metric(masks, GT, params, type, gt_force_binary)
+function [f, extra_info] = compute_error_metric(masks, GT, params, ...
+    type, gt_force_binary)
 % Can compute different error measures given an output mask and a GT. It
 % can also compute errors for multiple masks at the same time. The output
 % is a vector of error scores of length N where N is the number of masks 
@@ -34,6 +35,8 @@ function f = compute_error_metric(masks, GT, params, type, gt_force_binary)
 %   gt_force_binary: if this optional parameter is true then the GT is
 %       considered to be binary.
 
+    extra_info = struct;
+    
     % if GT has a third dimension, pick the first layer
     if ndims(GT) == 3
         GT = GT(:,:,1);
@@ -90,6 +93,9 @@ function f = compute_error_metric(masks, GT, params, type, gt_force_binary)
     all_is = all_is';
     if ~exist('type','var') || isempty(type) || strcmp(type,'overlap')
         f = all_is(:,4) ./ (sum(all_is(:,2:4),2) + eps);
+        extra_info.fp = all_is(:,2);
+        extra_info.fn = all_is(:,3);
+        extra_info.tp = all_is(:,4);
     elseif strcmp(type,'intersect_gt')
         f = all_is(:,4) ./ (all_is(:,2) + all_is(:,4) + eps);
     elseif strcmp(type,'incorrect_pixels')
