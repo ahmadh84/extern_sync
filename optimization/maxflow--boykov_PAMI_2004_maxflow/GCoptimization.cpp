@@ -1227,7 +1227,7 @@ bool GCoptimization::alpha_expansion(LabelID alpha_label)
 		// and compute the smooth costs between variables.
 		EnergyT e(size+m_labelcostCount, // poor guess at number of pairwise terms needed :(
 				 m_numNeighborsTotal+(m_labelcostCount?size+m_labelcostCount : 0),
-				 (void(*)(char*))handleError);
+				 (void(*)(const char*))handleError);
 		e.add_variable(size);
 		m_beforeExpansionEnergy = 0;
 		if ( m_setupDataCostsExpansion   ) (this->*m_setupDataCostsExpansion  )(size,alpha_label,&e,activeSites);
@@ -1361,7 +1361,7 @@ void GCoptimization::alpha_beta_swap(LabelID alpha_label, LabelID beta_label)
 
 		// Create binary variables for each remaining site, add the data costs,
 		// and compute the smooth costs between variables.
-		EnergyT e(size,m_numNeighborsTotal,(void(*)(char*))handleError);
+		EnergyT e(size,m_numNeighborsTotal,(void(*)(const char*))handleError);
 		e.add_variable(size);
 		if ( m_setupDataCostsSwap   ) (this->*m_setupDataCostsSwap  )(size,alpha_label,beta_label,&e,activeSites);
 		if ( m_setupSmoothCostsSwap ) (this->*m_setupSmoothCostsSwap)(size,alpha_label,beta_label,&e,activeSites);

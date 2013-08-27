@@ -96,7 +96,7 @@ public:
 	   function which will be called if an error occurs;
 	   an error message is passed to this function. If this
 	   argument is omitted, exit(1) will be called. */
-	Energy(int var_num_max, int edge_num_max, void (*err_function)(char *) = NULL);
+	Energy(int var_num_max, int edge_num_max, void (*err_function)(const char *) = NULL);
 
 	/* Destructor */
 	~Energy();
@@ -160,7 +160,7 @@ private:
 	/* internal variables and functions */
 
 	TotalValue	Econst;
-	void		(*error_function)(char *);	/* this function is called if a error occurs,
+	void		(*error_function)(const char *);	/* this function is called if a error occurs,
 											with a corresponding error message
 											(or exit(1) is called if it's NULL) */
 };
@@ -184,7 +184,7 @@ private:
 /***********************************************************************/
 
 template <typename captype, typename tcaptype, typename flowtype> 
-inline Energy<captype,tcaptype,flowtype>::Energy(int var_num_max, int edge_num_max, void (*err_function)(char *)) : Graph<captype,tcaptype,flowtype>(var_num_max, edge_num_max, err_function)
+inline Energy<captype,tcaptype,flowtype>::Energy(int var_num_max, int edge_num_max, void (*err_function)(const char *)) : Graph<captype,tcaptype,flowtype>(var_num_max, edge_num_max, err_function)
 {
 	Econst = 0;
 	error_function = err_function;
