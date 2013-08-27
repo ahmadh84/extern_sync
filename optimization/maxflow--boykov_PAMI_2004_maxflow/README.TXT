@@ -1,11 +1,11 @@
 ###################################################################
 #                                                                 #
 #    MAXFLOW - software for computing mincut/maxflow in a graph   #
-#                        Version 3.01                             #
-#    http://www.cs.ucl.ac.uk/staff/V.Kolmogorov/software.html     #
+#                        Version 3.02                             #
+#    http://http://pub.ist.ac.at/~vnk/software.html               #
 #                                                                 #
 #    Yuri Boykov (yuri@csd.uwo.ca)                                #
-#    Vladimir Kolmogorov (v.kolmogorov@cs.ucl.ac.uk)              #
+#    Vladimir Kolmogorov (vnk@ist.ac.at)                          #
 #    2001-2006                                                    #
 #                                                                 #
 ###################################################################

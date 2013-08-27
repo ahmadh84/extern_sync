@@ -1,5 +1,7 @@
 /* graph.h */
 /*
+	version 3.02
+
 	This software library implements the maxflow algorithm
 	described in
 
@@ -64,7 +66,7 @@ public:
 
 	/////////////////////////////////////////////////////////////////////////
 	//                     BASIC INTERFACE FUNCTIONS                       //
-    //              (should be enough for most applications)               //
+	//              (should be enough for most applications)               //
 	/////////////////////////////////////////////////////////////////////////
 
 	// Constructor. 
@@ -80,7 +82,7 @@ public:
 	// Also, temporarily the amount of allocated memory would be more than twice than needed.
 	// Similarly for edges.
 	// If you wish to avoid this overhead, you can download version 2.2, where nodes and edges are stored in blocks.
-	Graph(int node_num_max, int edge_num_max, void (*err_function)(char *) = NULL);
+	Graph(int node_num_max, int edge_num_max, void (*err_function)(const char *) = NULL);
 
 	// Destructor
 	~Graph();
@@ -247,7 +249,7 @@ public:
 		nodes[i].is_in_changed_list = 0;
 	}
 
-
+	void Copy(Graph<captype, tcaptype, flowtype>* g0);
 
 
 
@@ -300,7 +302,7 @@ private:
 
 	DBlock<nodeptr>		*nodeptr_block;
 
-	void	(*error_function)(char *);	// this function is called if a error occurs,
+	void	(*error_function)(const char *);	// this function is called if a error occurs,
 										// with a corresponding error message
 										// (or exit(1) is called if it's NULL)
 

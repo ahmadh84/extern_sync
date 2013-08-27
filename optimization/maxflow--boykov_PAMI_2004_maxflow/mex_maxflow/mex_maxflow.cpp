@@ -3,7 +3,7 @@
 // by Ian Endres (iendres2@uiuc.edu)
 #include <stdio.h>
 #include "mex.h"
-#include "graph.h"
+#include "../graph.h"
 
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
