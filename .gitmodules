@@ -4,3 +4,6 @@
 [submodule "segmentation/boundaries--lim_CVPR_2013_sketchtokens"]
 	path = segmentation/boundaries--lim_CVPR_2013_sketchtokens
 	url = git://github.com/joelimlimit/SketchTokens.git
+[submodule "toolboxes/vlfeat"]
+	path = toolboxes/vlfeat
+	url = git@bitbucket.org:ahmadh84/vlfeat.git
