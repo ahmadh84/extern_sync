@@ -10,10 +10,10 @@ addpath(gc_path)
 gpb_path = fullfile(extern_src, 'segmentation', 'boundaries+segments--arbelaez_PAMI_2010_bsr');
 addpath(genpath(gpb_path));
 
-flann_path = fullfile(extern_src, 'machine_learning', 'flann', 'build', 'src', 'matlab');
+%flann_path = fullfile(extern_src, 'machine_learning', 'flann', 'build', 'src', 'matlab');
 %addpath(flann_path);
-flann_path = fullfile(extern_src, 'machine_learning', 'flann', 'src', 'matlab');
-addpath(flann_path);
+%flann_path = fullfile(extern_src, 'machine_learning', 'flann', 'src', 'matlab');
+%addpath(flann_path);
 
 curr_path = fileparts(which(mfilename));
 external_code_path = fullfile(curr_path, 'external_code');
