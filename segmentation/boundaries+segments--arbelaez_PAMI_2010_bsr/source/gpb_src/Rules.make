@@ -83,7 +83,8 @@ MEX_LDFLAGS := \
    $(MEX_FLAGS) -shared \
    -Wl,--version-script,"$(MATLAB_PATH)/extern/lib/$(MATLAB_ARCH)/mexFunction.map" \
    -Wl,--rpath-link,"$(MATLAB_PATH)/bin/$(MATLAB_ARCH)" \
-   -L"$(MATLAB_PATH)/bin/$(MATLAB_ARCH)" $(MEX_LINK)
+   $(MEX_LINK)
+#   -L"$(MATLAB_PATH)/bin/$(MATLAB_ARCH)" $(MEX_LINK)
 
 # osx matlab mex file compilation settings - linker flags
 #MEX_LDFLAGS := \
