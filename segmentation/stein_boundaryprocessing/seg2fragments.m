@@ -1,5 +1,5 @@
 function [fragments, junctions, neighbor_data, seg, avg_seg_colors, ...
-    polyfragments, poly_params] = seg2fragments(seg, img, min_area, order)
+    polyfragments, poly_params, T] = seg2fragments(seg, img, min_area, order)
 %
 % [fragments, junctions, neighbor_data, new_seg, avg_seg_colors, ...
 %  <polyfragments>, <poly_params>] = seg2fragments(seg, img, min_area, <order>)
@@ -159,7 +159,7 @@ if(nargout>=5 || nargout==0)
         order = 3;
     end
     
-    [polyfragments, poly_params] = fit_curves(fragments, order);
+    [polyfragments, poly_params, error, T] = fit_curves(fragments, order);
 end
 
 if(nargout==0)
@@ -172,7 +172,7 @@ if(nargout==0)
     imagesc(img), axis image, hold on
     title(['Polynomial Fits to Fragments (order=' num2str(order)])
     
-    if(exist('file', 'drawedges'))
+    if(exist('drawedges','file'))
         subplot 121, drawedges(fragments, 'rand');
         subplot 122, drawedges(polyfragments, 'rand');
     else
