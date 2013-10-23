@@ -54,13 +54,13 @@ function endres_voc_test(SECTIONS, section_no, output_path)
         additional_info.timing.t_all = seg_time;
         
         % convert superpixel segments to masks
-        masks = zeros([size(superpixels), length(proposal_data.final_regions)]);
+        masks = false([size(superpixels), length(proposal_data.final_regions)]);
         for seg_idx = 1:length(proposal_data.final_regions)
             masks(:,:,seg_idx) = ismember(superpixels, proposal_data.final_regions{seg_idx});
         end
         
         save(fullfile(output_path, [img_name '.mat']), ...
-             'masks', 'additional_info');
+             'masks', 'additional_info', '-v7.3');
          
         % compute scores; print results; save
         [Q, collated_scores] = SvmSegm_segment_quality(img_name, gt_dir, ...

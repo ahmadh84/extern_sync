@@ -67,7 +67,7 @@ if ( do_clustering )
      % super-save
     seg_score = cut_score;
     [unused r] = sort(seg_score,'descend');
-    super_save_sel = r(1:n_super_save);
+    super_save_sel = r(1:min(n_super_save, length(r)));
         
     % clustering
     sel = clusterGraphCutSegments(segments, overlap_thresh, gPb_thin, img_size);
