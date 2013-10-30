@@ -42,6 +42,7 @@
 #define __GRAPH_H__
 
 #include <string.h>
+#include <stdint.h>
 #include "block.h"
 
 #include <assert.h>
