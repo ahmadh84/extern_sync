@@ -2,8 +2,11 @@
 //
 // by Ian Endres (iendres2@uiuc.edu)
 #include <stdio.h>
+#include <stdint.h>
 #include "mex.h"
 #include "../graph.h"
+#include "../graph.cpp"
+#include "../maxflow.cpp"
 
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
@@ -28,8 +31,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 
 
-   typedef Graph<double,double,double> DoubleGraph;
-   DoubleGraph g(num_nodes, num_edges); 
+   typedef Graph<int64_t,int64_t,int64_t> LongLongGraph;
+   LongLongGraph g(num_nodes, num_edges); 
 
    int *node_list = new int[num_nodes];
    
@@ -37,16 +40,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
    for(int i=0; i<num_nodes; i++) {
 //      printf("Adding node %d\n", i);
       node_list[i] = g.add_node();
-      g.add_tweights(node_list[i], unary[i], unary[num_nodes+i]);
+      g.add_tweights(node_list[i], (int64_t)unary[i], (int64_t)unary[num_nodes+i]);
    }
 
 
    for(int i=0; i<num_edges; i++) {
 //      printf("Adding edge %d, %d, %d\n", i, (int)edges[i]-1, node_list[(int)edges[i]-1]);
-      g.add_edge(node_list[(int)edges[i]-1], node_list[(int)edges[i+num_edges]-1], pw[i], pw[i]);
+      g.add_edge(node_list[(int)edges[i]-1], node_list[(int)edges[i+num_edges]-1], (int64_t)pw[i], (int64_t)pw[i]);
    }
 //   printf("Computing flow\n");
-   double flow_val = g.maxflow();
+   double flow_val = (double)g.maxflow();
 
    if(nlhs>0) {
       plhs[0] = mxCreateNumericMatrix(num_nodes, 1, mxDOUBLE_CLASS, mxREAL);
@@ -58,7 +61,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
    }
 
    if(nlhs>1) {
-      plhs[1] = mxCreateDoubleScalar(flow_val);
+      plhs[1] = mxCreateDoubleScalar((double)flow_val);
    }
 
    delete [] node_list;
