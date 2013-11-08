@@ -35,30 +35,37 @@ function endres_camvid_test(SECTIONS, section_no, output_path)
         img_name = camvid_files{camvid_idx};
         img_filepath = fullfile(data_dir, [img_name, '.png']);
         
-        [proposal_data, superpixels, seg_time] = generate_only_segments(img_filepath);
-        additional_info.timing.t_all = seg_time;
+        curr_output_path = fullfile(output_path, [img_name '.mat']);
+        curr_scores_path = fullfile(output_path, 'Scores', [img_name '_scores.mat']);
+
+        if ~exist(curr_output_path,'file') || ~exist(curr_scores_path,'file')
+           [proposal_data, superpixels, seg_time] = generate_only_segments(img_filepath);
+           additional_info.timing.t_all = seg_time;
         
-        % convert superpixel segments to masks
-        masks = false([size(superpixels), length(proposal_data.final_regions)]);
-        for seg_idx = 1:length(proposal_data.final_regions)
-            masks(:,:,seg_idx) = ismember(superpixels, proposal_data.final_regions{seg_idx});
-        end
+           % convert superpixel segments to masks
+           masks = false([size(superpixels), length(proposal_data.final_regions)]);
+           for seg_idx = 1:length(proposal_data.final_regions)
+               masks(:,:,seg_idx) = ismember(superpixels, proposal_data.final_regions{seg_idx});
+           end
         
-        save(fullfile(output_path, [img_name '.mat']), ...
-             'masks', 'additional_info', '-v7.3');
+           save(curr_output_path, ...
+                'masks', 'additional_info', '-v7.3');
          
-        % compute scores; print results; save
-        [Q, collated_scores] = SvmSegm_segment_quality_camvid([img_name '_L'], gt_dir, ...
+           % compute scores; print results; save
+           [Q, collated_scores] = SvmSegm_segment_quality_camvid([img_name '_L'], gt_dir, ...
                                                                masks, 'overlap');
-        fprintf('\n');
+           fprintf('\n');
         
-        num_segs = size(masks,3);
+           num_segs = size(masks,3);
         
-        save(fullfile(output_path, 'Scores', [img_name '_scores.mat']), ...
-             'Q', 'collated_scores', 'num_segs', 'seg_time');
+           save(curr_scores_path, ...
+                'Q', 'collated_scores', 'num_segs', 'seg_time');
         
-        fprintf('>>>>> %s: Overlap %.4f\n\n', img_name, ...
-                collated_scores.avg_best_overlap);
+           fprintf('>>>>> %s: Overlap %.4f\n\n', img_name, ...
+                   collated_scores.avg_best_overlap);
+        else
+           fprintf('Skipping %s\n', curr_output_path);
+        end
     end
 end
 
