@@ -24,7 +24,7 @@ el = 2;
 k = 64;
 fname = sprintf( ...
     'unitex_%.2g_%.2g_%.2g_%.2g_%.2g_%d.mat',no,ss,ns,sc,el,k);
-textonData = load(fname); % defines fb,tex,tsim
+textonData = load(fname,'tex','fb','tsim'); % defines fb,tex,tsim
 tmap = assignTextons(fbRun(textonData.fb,rgb2gray(im)),textonData.tex);
 [tg,theta] = tgmo(tmap,k,idiag*radius(4),norient,...
                   'smooth','savgol','sigma',idiag*radius(4));

@@ -46,12 +46,17 @@ function kim_voc_test(SECTIONS, section_no, output_path)
     
     fprintf('Computing from %d to %d\n', start_idx, end_idx);
     
+    all_seg_time = [];
+    all_overlap = [];
+    
     for voc_idx = start_idx:end_idx
         img_name = voc_files{voc_idx};
         img_filepath = fullfile(data_dir, [img_name, '.jpg']);
         
         [masks, timing] = ComputeSegment(img_filepath);
         additional_info.timing = timing;
+        
+        all_seg_time = [all_seg_time, additional_info.timing.t_all];
         
         save(fullfile(output_path, [img_name '.mat']), ...
              'masks', 'additional_info');
@@ -60,6 +65,8 @@ function kim_voc_test(SECTIONS, section_no, output_path)
         [Q, collated_scores] = SvmSegm_segment_quality(img_name, gt_dir, ...
                                                        masks, 'overlap');
         fprintf('\n');
+        
+        all_overlap = [all_overlap, collated_scores.avg_best_overlap];
         
         num_segs = size(masks,3);
         seg_time = timing.t_all;
@@ -70,6 +77,9 @@ function kim_voc_test(SECTIONS, section_no, output_path)
         fprintf('>>>>> %s: Overlap %.4f\n\n', img_name, ...
                 collated_scores.avg_best_overlap);
     end
+    
+    fprintf('Time: %.3f\n', mean(all_seg_time));
+    fprintf('Overlap: %.4f\n', mean(all_overlap));
 end
 
 

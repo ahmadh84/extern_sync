@@ -46,12 +46,17 @@ function endres_voc_test(SECTIONS, section_no, output_path)
     
     fprintf('Computing from %d to %d\n', start_idx, end_idx);
     
+    all_seg_time = [];
+    all_overlap = [];
+    
     for voc_idx = start_idx:end_idx
         img_name = voc_files{voc_idx};
         img_filepath = fullfile(data_dir, [img_name, '.jpg']);
         
         [proposal_data, superpixels, seg_time] = generate_only_segments(img_filepath);
         additional_info.timing.t_all = seg_time;
+        
+        all_seg_time = [all_seg_time, seg_time];
         
         % convert superpixel segments to masks
         masks = false([size(superpixels), length(proposal_data.final_regions)]);
@@ -67,6 +72,8 @@ function endres_voc_test(SECTIONS, section_no, output_path)
                                                        masks, 'overlap');
         fprintf('\n');
         
+        all_overlap = [all_overlap, collated_scores.avg_best_overlap];
+        
         num_segs = size(masks,3);
         
         save(fullfile(output_path, 'Scores', [img_name '_scores.mat']), ...
@@ -75,6 +82,9 @@ function endres_voc_test(SECTIONS, section_no, output_path)
         fprintf('>>>>> %s: Overlap %.4f\n\n', img_name, ...
                 collated_scores.avg_best_overlap);
     end
+    
+    fprintf('Time: %.3f\n', mean(all_seg_time));
+    fprintf('Overlap: %.4f\n', mean(all_overlap));
 end
 
 
