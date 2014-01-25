@@ -1,4 +1,6 @@
-function [final_regions res] = processReg2Proposals(image_data, region_data)
+function [final_regions res timings] = processReg2Proposals(image_data, region_data)
+
+timings = struct;
 
 % function_root = which('generate_proposals.m');
 % function_root = function_root(1:end-length('generate_proposals.m'));
@@ -19,6 +21,7 @@ pb_a = 0.01 + 0.99*pb_t; % avoid zero cost edges
 
 
 %%%%%%%%%%%% Edge pairwise constraints %%%%%%%%%%%
+edge_start = tic;
 flipped = bndinfo.edges.spLR(:,1) > bndinfo.edges.spLR(:,2);
 edges_sorted = bndinfo.edges.spLR;
 edges_sorted(flipped, [1 2]) = edges_sorted(flipped, [2 1]);
@@ -38,15 +41,21 @@ pw_pb_norm = pw_pb.^sp_pair_norm;
 
 edges_pb_pw = pairs;
 
+timings.edge_prep_crf = toc(edge_start);
+
+%%%%%%%%%%%% Unary constraints %%%%%%%%%%%
+unary_start = tic;
 region_object = 1./(1+exp(-region_data.predictions(:, 6)));
 region_purity = 1./(1+exp(-region_data.predictions(:, 5)));
 
 [prob sinds] = sort(region_object.*region_purity, 'descend');
 
+region_to_sp_start = tic;
 sp_pure_obj_sum = region_to_sp(bndinfo, regions, 'accum', region_object.*region_purity);
 sp_pure_sum = region_to_sp(bndinfo, regions, 'accum', region_purity);
 
 weighted_sp_po = sp_pure_obj_sum./sp_pure_sum;
+timings.region_to_sp = toc(region_to_sp_start);
 
 sind = sinds(1);
 
@@ -63,18 +72,24 @@ u_p_all = 1./(1+exp(-u_energy_all));
 tradeoffs = [0 0.05 0.1 0.5 1 2 5 10];
 biases = [-2 -1.5 -1 -0.5 0 0.5 1];%'*ones(1,bndinfo.nseg);
 
-results = repmat(struct([]), numel(tradeoffs)*numel(biases)*num_seeds, 1);
+results = repmat({{}}, 1, num_seeds);
 r_ind = 1;
 
+timings.unary_prep_crf = toc(unary_start);
+
+cut_start = tic;
 start = tic;
 
-for i = 1:num_seeds
+% for i = 1:num_seeds
+parfor(i = 1:num_seeds, 8)
    sind = sinds(i);
-   if(toc(start)>5)
-      fprintf('\t%d/%d\n', i, num_seeds);
-      start = tic;
-   end
+%    if(toc(start)>5)
+%       fprintf('\t%d/%d\n', i, num_seeds);
+%       start = tic;
+%    end
 
+   results{i} = repmat({}, 1, numel(tradeoffs)*numel(biases));
+   
    u_p = u_p_all(sind,:)';
    
    u_pok_unnorm = region_to_sp(bndinfo, regions, 'accum', u_p.*region_purity); 
@@ -87,21 +102,29 @@ for i = 1:num_seeds
          tradeoff = tradeoffs(tr);
          bias = biases(b);
 
-         do_cut_fast
+         [lab2, energy] = do_cut_fast(regions{sind}, u_pok_norm, bias, pw_pb_norm, tradeoff, edges_pb_pw, bndinfo, region_data);
 
-         results(r_ind).tradeoff = tradeoff;
-         results(r_ind).bias = bias;
-         results(r_ind).sind = sind;
-         results(r_ind).energy = energy;
-         results(r_ind).regions = find(lab2==2);
+         curr_r_ind = (tr-1)*numel(biases) + b;
+%          assert(curr_r_ind == r_ind, 'something wrong in r_ind calc');
          
-         results(r_ind).seed_prob = region_object(sind);
-         results(r_ind).seed_w_prob = region_object(sind).*region_purity(sind);
-         r_ind = r_ind + 1;
+         results{i}{curr_r_ind}.tradeoff = tradeoff;
+         results{i}{curr_r_ind}.bias = bias;
+         results{i}{curr_r_ind}.sind = sind;
+         results{i}{curr_r_ind}.energy = energy;
+         results{i}{curr_r_ind}.regions = find(lab2==2);
+         
+         results{i}{curr_r_ind}.seed_prob = region_object(sind);
+         results{i}{curr_r_ind}.seed_w_prob = region_object(sind).*region_purity(sind);
+%          r_ind = r_ind + 1;
       end
    end
 end
+timings.cut_all_seeds = toc(cut_start);
 
+results = horzcat(results{:})';
+results = horzcat(results{:});
+
+rf_start = tic;
 sp_areas_struct = regionprops(bndinfo.wseg, 'Area', 'BoundingBox');
 sp_areas = [sp_areas_struct.Area];
 sp_bb = cat(1,sp_areas_struct.BoundingBox);
@@ -109,6 +132,7 @@ sp_bb = [sp_bb(:,1) sp_bb(:,2) (sp_bb(:,1) + sp_bb(:,3)) (sp_bb(:,2) + sp_bb(:,4
 
 regions = {results.regions};
 %%%%%%%%%%%%% Prune Regions %%%%%%%%%%%%%%%%%%%%%%
+
 %[orig_regions orig2unique] = get_unique_regions(regions, bndinfo.nseg); 
 % Remove redundant regions (nms with threshold of 100%)
 orig_regions = region_nms_fast(regions, ones(size(regions)), 1, sp_areas, bndinfo);
@@ -127,6 +151,8 @@ for i = 1:length(final_regions)
    end
 end
 final_regions = final_regions(~remove);
+
+timings.region_filter = toc(rf_start);
 
 res.prop_bbox = get_region_bbox(final_regions, sp_bb);
 res.orig_prop_bbox = get_region_bbox(orig_regions, sp_bb);

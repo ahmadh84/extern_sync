@@ -1,4 +1,4 @@
-function [bndinfo, pbim, gconf, bndinfo_all] =  processIm2Occlusion(im, varargin)
+function [bndinfo, pbim, gconf, bndinfo_all, pb_time] =  processIm2Occlusion(im, varargin)
 
 %% Set parameters
 
@@ -10,7 +10,7 @@ if max(size(im))>640
 end
 
 %% Get occlusion info
-[bndinfo, pbim, gconf, bndinfo_all] = im2boundariesTopLevel(im);
+[bndinfo, pbim, gconf, bndinfo_all, pb_time] = im2boundariesTopLevel(im);
 gconf = single(gconf);
 pbim = single(pbim);
 

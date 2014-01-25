@@ -1,7 +1,9 @@
-   u_pok = log(u_pok_norm ./ (1-u_pok_norm)) + bias';
+function [lab2, energy] = do_cut_fast(regions_sind, u_pok_norm, bias, pw_pb_norm, tradeoff, edges_pb_pw, bndinfo, region_data)
+
+u_pok = log(u_pok_norm ./ (1-u_pok_norm)) + bias';
 
    unary = [zeros(numel(u_pok), 1)  -u_pok(:)];
-   unary(regions{sind},:) = repmat([Inf 0], numel(regions{sind}), 1);
+   unary(regions_sind,:) = repmat([Inf 0], numel(regions_sind), 1);
    %[lab3, energy3] = alphaExpansion(labels, unary, edges_pb_pw, -log(costs_pb_pw)*tradeoff, 2);
    [lab2, energy] = mex_maxflow(unary, -log(pw_pb_norm(1:end))*tradeoff, double(edges_pb_pw(1:end,:)));
 

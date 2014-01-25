@@ -37,9 +37,8 @@ function endres_voc_test(SECTIONS, section_no, output_path)
         img_name = voc_files{voc_idx};
         img_filepath = fullfile(data_dir, [img_name, '.jpg']);
         
-        [proposal_data, superpixels, seg_time] = generate_only_segments(img_filepath);
-        additional_info.timing.t_all = seg_time;
-        
+        [proposal_data, superpixels, additional_info] = generate_only_segments(img_filepath);
+        seg_time = additional_info.timing.t_all;
         all_seg_time = [all_seg_time, seg_time];
         
         % convert superpixel segments to masks
@@ -69,6 +68,8 @@ function endres_voc_test(SECTIONS, section_no, output_path)
     
     fprintf('Time: %.3f\n', mean(all_seg_time));
     fprintf('Overlap: %.4f\n', mean(all_overlap));
+    
+    matlabpool('close');
 end
 
 

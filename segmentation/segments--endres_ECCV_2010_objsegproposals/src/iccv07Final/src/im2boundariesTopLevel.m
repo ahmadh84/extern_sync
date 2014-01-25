@@ -1,4 +1,4 @@
-function [bndinfo, pbim, gconf, bndinfo_all] = im2boundariesTopLevel(im, thresh)
+function [bndinfo, pbim, gconf, bndinfo_all, pb_time] = im2boundariesTopLevel(im, thresh)
 %
 % [bndinfo, pbim, gconf] = im2boundariesTopLevel(im, thresh)
 %
@@ -55,7 +55,7 @@ gclassifiers2 = load(fullfile(curr_dir, '../data/perfectSegClassifierCv.mat'));
 disp('pb')
 tic
 pbim = pbCGTG_nonmax(im);
-toc
+pb_time = toc;
 
 % create geometric confidences
 disp('geometry')
