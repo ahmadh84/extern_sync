@@ -84,13 +84,13 @@
 %   -transparent - option indicating that the figure background is to be
 %                  made transparent (png, pdf and eps output only).
 %   -m<val> - option where val indicates the factor to magnify the
-%             on-screen figure dimensions by when generating bitmap
+%             on-screen figure pixel dimensions by when generating bitmap
 %             outputs. Default: '-m1'.
 %   -r<val> - option val indicates the resolution (in pixels per inch) to
-%             export bitmap outputs at, keeping the dimensions of the
-%             on-screen figure. Default: sprintf('-r%g', get(0,
-%             'ScreenPixelsPerInch')). Note that the -m and -r options
-%             change the same property.
+%             export bitmap and vector outputs at, keeping the dimensions
+%             of the on-screen figure. Default: '-r864' (for vector output
+%             only). Note that the -m option overides the -r option for
+%             bitmap outputs only.
 %   -native - option indicating that the output resolution (when outputting
 %             a bitmap format) should be such that the vertical resolution
 %             of the first suitable image found in the figure is at the
@@ -167,6 +167,10 @@
 %           tick marks fixed.
 % 12/12/12: Add support for isolating uipanels. Thanks to michael for
 %           suggesting it.
+% 25/09/13: Add support for changing resolution in vector formats. Thanks
+%           to Jan Jaap Meijer for suggesting it.
+% 07/05/14: Add support for '~' at start of path. Thanks to Sally Warner
+%           for suggesting it.
 
 function [im, alpha] = export_fig(varargin)
 % Make sure the figure is rendered correctly _now_ so that properties like
@@ -405,7 +409,7 @@ if isvector(options)
         pdf_nam = [tempname '.pdf'];
     end
     % Generate the options for print
-    p2eArgs = {renderer};
+    p2eArgs = {renderer, sprintf('-r%d', options.resolution)};
     if options.colourspace == 1
         p2eArgs = [p2eArgs {'-cmyk'}];
     end
@@ -485,7 +489,8 @@ options = struct('name', 'export_fig_out', ...
                  'im', nout == 1, ...
                  'alpha', nout == 2, ...
                  'aa_factor', 3, ...
-                 'magnify', 1, ...
+                 'magnify', [], ...
+                 'resolution', [], ...
                  'bookmark', false, ...
                  'quality', []);
 native = false; % Set resolution to native of an image
@@ -542,7 +547,7 @@ for a = 1:nargin-1
                         case 'm'
                             options.magnify = val;
                         case 'r'
-                            options.magnify = val ./ get(0, 'ScreenPixelsPerInch');
+                            options.resolution = val;
                         case 'q'
                             options.quality = max(val, 0);
                     end
@@ -572,6 +577,23 @@ for a = 1:nargin-1
     end
 end
 
+% Convert user dir '~' to full path
+if numel(options.name) > 2 && options.name(1) == '~' && (options.name(2) == '/' || options.name(2) == '\')
+    options.name = fullfile(char(java.lang.System.getProperty('user.home')), options.name(2:end));
+end
+
+% Compute the magnification and resolution
+if isempty(options.magnify)
+    if isempty(options.resolution)
+        options.magnify = 1;
+        options.resolution = 864;
+    else
+        options.magnify = options.resolution ./ get(0, 'ScreenPixelsPerInch');
+    end
+elseif isempty(options.resolution)
+    options.resolution = 864;
+end  
+
 % Check we have a figure handle
 if isempty(fig)
     error('No figure found');
@@ -583,7 +605,7 @@ if ~isvector(options) && ~isbitmap(options)
 end
 
 % Check whether transparent background is wanted (old way)
-if isequal(get(ancestor(fig, 'figure'), 'Color'), 'none')
+if isequal(get(ancestor(fig(1), 'figure'), 'Color'), 'none')
     options.transparent = true;
 end
 

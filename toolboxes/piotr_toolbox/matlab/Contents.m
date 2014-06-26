@@ -41,6 +41,7 @@
 %   ind2sub2          - Improved version of ind2sub.
 %   isfield2          - Similar to isfield but also test whether fields are initialized.
 %   int2str2          - Convert integer to string of given length; improved version of int2str.
+%   medianw           - Fast weighted median.
 %   multiDiv          - Matrix divide each submatrix of two 3D arrays without looping.
 %   multiTimes        - Matrix multiply each submatrix of two 3D arrays without looping.
 %   normpdf2          - Normal prob. density function (pdf) with arbitrary covariance matrix.
@@ -53,7 +54,6 @@
 %   spBlkDiag         - Creates a sparse block diagonal matrix from a 3D array.
 %   sub2ind2          - Improved version of sub2ind.
 %   subsToArray       - Converts subs/vals image representation to array representation.
-%   subsampleMatrix   - Samples elements of X so result uses at most maxMegs megabytes of memory.
 %   uniqueColors      - Generate m*n visually distinct RGB colors suitable for display.
 %
 % Thin plate splines:

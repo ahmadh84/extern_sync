@@ -33,7 +33,10 @@
    &quot;The Fastest Pedestrian Detector in the West,&quot; BMVC 2010.
   [3] P. Dollár, R. Appel and W. Kienzle
    &quot;Crosstalk Cascades for Frame-Rate Pedestrian Detection,&quot; ECCV 2012.
+  [4] P. Dollár, R. Appel, S. Belongie and P. Perona
+   &quot;Fast Feature Pyramids for Object Detection&quot;, PAMI 2014.
  Please cite a subset of the above papers if you end up using the code.
+ The PAMI 2014 paper has the most thorough and up to date descriptions.
  Code written and maintained by Piotr Dollar and Ron Appel.
 
  Channels:
@@ -49,9 +52,10 @@
  Gradients and gradient histograms:
    <a href="gradient2.html" class="code" title="function [Gx,Gy] = gradient2( I )">gradient2</a>    - Compute numerical gradients along x and y directions.
    <a href="gradientHist.html" class="code" title="function H = gradientHist( M, O, varargin )">gradientHist</a> - Compute oriented gradient histograms.
-   <a href="gradientMag.html" class="code" title="function [M,O] = gradientMag( I, channel, normRad, normConst )">gradientMag</a>  - Compute gradient magnitude and orientation at each image location.
-   <a href="hog.html" class="code" title="function H = hog( I, binSize, nOrients, clip )">hog</a>          - Efficiently compute histogram of oriented gradient (HOG) features.
-   <a href="hogDraw.html" class="code" title="function V = hogDraw( H, w )">hogDraw</a>      - Create visualization of <a href="hog.html" class="code" title="function H = hog( I, binSize, nOrients, clip )">hog</a> descriptor.
+   <a href="gradientMag.html" class="code" title="function [M,O] = gradientMag( I, channel, normRad, normConst, full )">gradientMag</a>  - Compute gradient magnitude and orientation at each image location.
+   <a href="hog.html" class="code" title="function H = hog( I, binSize, nOrients, clip, crop )">hog</a>          - Efficiently compute histogram of oriented gradient (HOG) features.
+   <a href="hogDraw.html" class="code" title="function V = hogDraw( H, w, fhog )">hogDraw</a>      - Create visualization of <a href="hog.html" class="code" title="function H = hog( I, binSize, nOrients, clip, crop )">hog</a> descriptor.
+   <a href="fhog.html" class="code" title="function H = fhog( I, binSize, nOrients, clip, crop )">fhog</a>         - Efficiently compute Felzenszwalb's <a href="hog.html" class="code" title="function H = hog( I, binSize, nOrients, clip, crop )">HOG</a> (FHOG) features.
 
  Miscellaneous:
    <a href="imPad.html" class="code" title="function J = imPad( I, pad, type )">imPad</a>        - Pad an image along its four boundaries.

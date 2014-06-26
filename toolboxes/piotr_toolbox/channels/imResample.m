@@ -29,8 +29,8 @@ function B = imResample( A, scale, method, norm )
 %
 % See also imresize
 %
-% Piotr's Image&Video Toolbox      Version 3.00
-% Copyright 2012 Piotr Dollar.  [pdollar-at-caltech.edu]
+% Piotr's Image&Video Toolbox      Version 3.24
+% Copyright 2013 Piotr Dollar.  [pdollar-at-caltech.edu]
 % Please email me if you find bugs, or have suggestions or questions!
 % Licensed under the Simplified BSD License [see external/bsd.txt]
 
@@ -41,6 +41,8 @@ if( nargin<3 || isempty(method) ), bilinear=1; else
 end
 if( nargin<4 || isempty(norm) ), norm=1; end
 [m,n,~]=size(A); k=numel(scale);
+same = (k==1 && scale==1) | (k==2 && m==scale(1) && n==scale(2));
+if( same && norm==1 ); B=A; return; end
 
 if( bilinear )
   % use bilinear interpolation

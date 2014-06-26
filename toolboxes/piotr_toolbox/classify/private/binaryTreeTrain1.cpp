@@ -1,11 +1,13 @@
 /*******************************************************************************
-* Piotr's Image&Video Toolbox      Version 3.21
+* Piotr's Image&Video Toolbox      Version 3.24
 * Copyright 2013 Piotr Dollar.  [pdollar-at-caltech.edu]
 * Please email me if you find bugs, or have suggestions or questions!
 * Licensed under the Simplified BSD License [see external/bsd.txt]
 *******************************************************************************/
 #include <mex.h>
+#ifdef USEOMP
 #include <omp.h>
+#endif
 
 typedef unsigned char uint8;
 typedef unsigned int uint32;
@@ -48,17 +50,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     M1 = (int) mxGetNumberOfElements(prhs[9]);
   }
 
-  // find lowest error for each feature
+  // create outpu structure
   plhs[0] = mxCreateNumericMatrix(1,F,mxSINGLE_CLASS,mxREAL);
   plhs[1] = mxCreateNumericMatrix(1,F,mxUINT8_CLASS,mxREAL);
   float *errs = (float*) mxGetData(plhs[0]);
   uint8 *thrs = (uint8*) mxGetData(plhs[1]);
+
+  // find lowest error for each feature
+  #ifdef USEOMP
   nThreads = min(nThreads,omp_get_max_threads());
   #pragma omp parallel for num_threads(nThreads)
+  #endif
   for( int f=0; f<F; f++ ) {
     float cdf0[256], cdf1[256], e0=1, e1=0, e; int thr;
-    constructCdf(data0+fids[f]*N0,wts0,nBins,N0,M0,ord0,cdf0);
-    constructCdf(data1+fids[f]*N1,wts1,nBins,N1,M1,ord1,cdf1);
+    constructCdf(data0+N0*size_t(fids[f]),wts0,nBins,N0,M0,ord0,cdf0);
+    constructCdf(data1+N1*size_t(fids[f]),wts1,nBins,N1,M1,ord1,cdf1);
     for( int i=0; i<nBins; i++) {
       e = prior - cdf1[i] + cdf0[i];
       if(e<e0) { e0=e; e1=1-e; thr=i; } else if(e>e1) { e0=1-e; e1=e; thr=i; }
