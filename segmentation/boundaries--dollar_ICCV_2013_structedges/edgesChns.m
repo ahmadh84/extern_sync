@@ -18,7 +18,7 @@ function [chnsReg,chnsSim] = edgesChns( I, opts )
 %
 % See also edgesDemo, edgesTrain, edgesDetect, gradientMag
 %
-% Structured Edge Detection Toolbox      Version 1.0
+% Structured Edge Detection Toolbox      Version 2.0
 % Copyright 2013 Piotr Dollar.  [pdollar-at-microsoft.com]
 % Please email me if you find bugs, or have suggestions or questions!
 % Licensed under the MSR-LA Full Rights License [see license.txt]
