@@ -1,4 +1,4 @@
-function [E,O,inds,segs] = edgesDetect( I, model )
+function [E,T,O,inds,segs] = edgesDetect( I, model )
 % Detect edges in image.
 %
 % For an introductory tutorial please see edgesDemo.m.
@@ -9,7 +9,7 @@ function [E,O,inds,segs] = edgesDetect( I, model )
 % non-maximum suppression. See edgesTrain for parameter details.
 %
 % USAGE
-%  [E,O,inds,segs] = edgesDetect( I, model )
+%  [E,T,O,inds,segs] = edgesDetect( I, model )
 %
 % INPUTS
 %  I          - [h x w x 3] color input image
@@ -71,7 +71,8 @@ if( opts.nms==-1 ), O=[]; elseif( nargout>1 || opts.nms )
   O=mod(atan(Oyy.*sign(-Oxy)./(Oxx+1e-5)),pi);
 end
 
+T = [];
 % perform nms
-if( opts.nms>0 ), E=edgesNmsMex(E,O,1,5,1.01,opts.nThreads); end
+if( opts.nms>0 ), T=edgesNmsMex(E,O,1,5,1.01,opts.nThreads); end
 
 end
