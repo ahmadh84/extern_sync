@@ -7,3 +7,6 @@
 [submodule "toolboxes/vlfeat"]
 	path = toolboxes/vlfeat
 	url = git@bitbucket.org:ahmadh84/vlfeat.git
+[submodule "segmentation/boundaries--isola_ECCV_2014_crispboundaries"]
+	path = segmentation/boundaries--isola_ECCV_2014_crispboundaries
+	url = git@github.com:phillipi/crisp-boundaries.git
