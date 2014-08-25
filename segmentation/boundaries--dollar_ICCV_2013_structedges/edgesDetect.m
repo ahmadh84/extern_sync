@@ -1,4 +1,4 @@
-function [E,T,O,inds,segs] = edgesDetect( I, model )
+function [E,O,inds,segs] = edgesDetect( I, model )
 % Detect edges in image.
 %
 % For an introductory tutorial please see edgesDemo.m.
@@ -9,7 +9,7 @@ function [E,T,O,inds,segs] = edgesDetect( I, model )
 % non-maximum suppression. See edgesTrain for parameter details.
 %
 % USAGE
-%  [E,T,O,inds,segs] = edgesDetect( I, model )
+%  [E,O,inds,segs] = edgesDetect( I, model )
 %
 % INPUTS
 %  I          - [h x w x 3] color input image
@@ -25,8 +25,8 @@ function [E,T,O,inds,segs] = edgesDetect( I, model )
 %
 % See also edgesDemo, edgesTrain, edgesChns
 %
-% Structured Edge Detection Toolbox      Version 2.0
-% Copyright 2013 Piotr Dollar.  [pdollar-at-microsoft.com]
+% Structured Edge Detection Toolbox      Version 3.0
+% Copyright 2014 Piotr Dollar.  [pdollar-at-microsoft.com]
 % Please email me if you find bugs, or have suggestions or questions!
 % Licensed under the MSR-LA Full Rights License [see license.txt]
 
@@ -71,8 +71,7 @@ if( opts.nms==-1 ), O=[]; elseif( nargout>1 || opts.nms )
   O=mod(atan(Oyy.*sign(-Oxy)./(Oxx+1e-5)),pi);
 end
 
-T = [];
 % perform nms
-if( opts.nms>0 ), T=edgesNmsMex(E,O,1,5,1.01,opts.nThreads); end
+if( opts.nms>0 ), E=edgesNmsMex(E,O,1,5,1.01,opts.nThreads); end
 
 end

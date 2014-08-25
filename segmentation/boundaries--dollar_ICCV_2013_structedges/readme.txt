@@ -1,28 +1,35 @@
 ###################################################################
 #                                                                 #
-#    Structured Edge Detection Toolbox V2.0                       #
+#    Structured Edge Detection Toolbox V3.0                       #
 #    Piotr Dollar (pdollar-at-microsoft.com)                      #
 #                                                                 #
 ###################################################################
 
 1. Introduction.
 
-Very fast edge detector (1-60 fps depending on parameter settings) that achieves excellent accuracy (top accuracy on BSDS500 Segmentation dataset and NYU Depth dataset as of publication date). Can serve as input to any vision algorithm requiring high quality edge maps. 
+Very fast edge detector (up to 60 fps depending on parameter settings) that achieves excellent accuracy. Can serve as input to any vision algorithm requiring high quality edge maps. Toolbox also includes the Edge Boxes object proposal generation method and fast superpixel code.
 
-If you use the Structured Edge Detection Toolbox, we appreciate it if you cite the following work in any resulting publication:
+If you use the Structured Edge Detection Toolbox, we appreciate it if you cite an appropriate subset of the following papers:
 
 @inproceedings{DollarICCV13edges,
-  author={Piotr Doll\'ar and C. Lawrence Zitnick},
-  title={Structured Forests for Fast Edge Detection},
-  booktitle={ICCV},
-  year={2013},
+  author    = {Piotr Doll\'ar and C. Lawrence Zitnick},
+  title     = {Structured Forests for Fast Edge Detection},
+  booktitle = {ICCV},
+  year      = {2013},
 }
 
-@article{2014arXiv,
-  author={Piotr Doll\'ar and C. Lawrence Zitnick},
-  title={Fast Edge Detection Using Structured Forests},
-  journal = {ArXiv},
-  year = 2014,
+@article{DollarARXIV14edges,
+  author    = {Piotr Doll\'ar and C. Lawrence Zitnick},
+  title     = {Fast Edge Detection Using Structured Forests},
+  journal   = {ArXiv},
+  year      = {2014},
+}
+
+@inproceedings{ZitnickECCV14edgeBoxes,
+  author    = {C. Lawrence Zitnick and Piotr Doll\'ar},
+  title     = {Edge Boxes: Locating Object Proposals from Edges},
+  booktitle = {ECCV},
+  year      = {2014},
 }
 
 ###################################################################
@@ -38,19 +45,19 @@ Please read license.txt for more info.
 
 a) This code is written for the Matlab interpreter (tested with versions R2013a-2013b) and requires the Matlab Image Processing Toolbox. 
 
-b) Additionally, Piotr's Matlab Toolbox (version 3.24 or later) is also required. It can be downloaded at: 
+b) Additionally, Piotr's Matlab Toolbox (version 3.26 or later) is also required. It can be downloaded at:
  http://vision.ucsd.edu/~pdollar/toolbox/doc/index.html.
 
 c) Next, please compile mex code from within Matlab (note: win64/linux64 binaries included):
-Windows:
-  mex private/edgesDetectMex.cpp -outdir private '-DUSEOMP' 'OPTIMFLAGS="$OPTIMFLAGS' '/openmp"'
-  mex private/edgesNmsMex.cpp    -outdir private '-DUSEOMP' 'OPTIMFLAGS="$OPTIMFLAGS' '/openmp"'
-Linux version 1:
-  mex private/edgesDetectMex.cpp -outdir private '-DUSEOMP' CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp"
-  mex private/edgesNmsMex.cpp    -outdir private '-DUSEOMP' CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp"
-Linux version 2:
-  mex private/edgesDetectMex.cpp -outdir private '-DUSEOMP' CXXFLAGS="\$CXXFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp"
-  mex private/edgesNmsMex.cpp    -outdir private '-DUSEOMP' CXXFLAGS="\$CXXFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp"
+  mex private/edgesDetectMex.cpp -outdir private [OMPPARAMS]
+  mex private/edgesNmsMex.cpp    -outdir private [OMPPARAMS]
+  mex private/spDetectMex.cpp    -outdir private [OMPPARAMS]
+  mex private/edgeBoxesMex.cpp   -outdir private
+Here [OMPPARAMS] are parameters for OpenMP and are OS and compiler dependent.
+  Windows:  [OMPPARAMS] = '-DUSEOMP' 'OPTIMFLAGS="$OPTIMFLAGS' '/openmp"'
+  Linux V1: [OMPPARAMS] = '-DUSEOMP' CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp"
+  Linux V2: [OMPPARAMS] = '-DUSEOMP' CXXFLAGS="\$CXXFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp"
+To compile without OpenMP simply omit [OMPPARAMS]; note that code will be single threaded in this case.
 
 d) Add edge detection code to Matlab path (change to current directory first): 
  >> addpath(pwd); savepath;
@@ -66,12 +73,17 @@ f) A fully trained edge model for RGB images is available as part of this releas
 4. Getting Started.
 
  - Make sure to carefully follow the installation instructions above.
- - Please see "edgesDemo.m" to run a demo and get basic usage information.
+ - Please see "edgesDemo.m", "edgeBoxesDemo" and "spDemo.m" to run demos and get basic usage information.
  - For a detailed list of functionality see "Contents.m".
 
 ###################################################################
 
 5. History.
+
+Version 3.0 (07/23/2014)
+ - added Edge Boxes code corresponding to ECCV paper
+ - added Sticky Superpixels code
+ - edge detection code unchanged
 
 Version 2.0 (06/20/2014)
  - second version corresponding to arXiv paper
