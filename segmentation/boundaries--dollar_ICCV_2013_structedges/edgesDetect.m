@@ -1,4 +1,4 @@
-function [E,O,inds,segs] = edgesDetect( I, model )
+function [E,T,O,inds,segs] = edgesDetect( I, model )
 % Detect edges in image.
 %
 % For an introductory tutorial please see edgesDemo.m.
@@ -41,8 +41,8 @@ if( opts.multiscale )
   ss=2.^(-1:1); k=length(ss); inds=cell(1,k); segs=inds;
   siz=size(I); model.opts.multiscale=0; model.opts.nms=0; E=0;
   for i=1:k, s=ss(i); I1=imResample(I,s);
-    if(nargout<4), [E1,inds{i}]=edgesDetect(I1,model);
-    else [E1,inds{i},segs{i}]=edgesDetect(I1,model); end
+    if(nargout<5), [E1,~,~,inds{i}]=edgesDetect(I1,model);
+    else [E1,~,~,inds{i},segs{i}]=edgesDetect(I1,model); end
     E=E+imResample(E1,siz(1:2));
   end; E=E/k; model.opts=opts;
   
@@ -55,7 +55,7 @@ else
   % compute features and apply forest to image
   [chnsReg,chnsSim] = edgesChns( I, opts );
   s=opts.sharpen; if(s), I=convTri(rgbConvert(I,'rgb'),1); end
-  if(nargout<4), [E,inds] = edgesDetectMex(model,I,chnsReg,chnsSim);
+  if(nargout<5), [E,inds] = edgesDetectMex(model,I,chnsReg,chnsSim);
   else [E,inds,segs] = edgesDetectMex(model,I,chnsReg,chnsSim); end
   
   % normalize and finalize edge maps
@@ -71,7 +71,8 @@ if( opts.nms==-1 ), O=[]; elseif( nargout>1 || opts.nms )
   O=mod(atan(Oyy.*sign(-Oxy)./(Oxx+1e-5)),pi);
 end
 
+T = [];
 % perform nms
-if( opts.nms>0 ), E=edgesNmsMex(E,O,1,5,1.01,opts.nThreads); end
+if( opts.nms>0 ), T=edgesNmsMex(E,O,1,5,1.01,opts.nThreads); end
 
 end
