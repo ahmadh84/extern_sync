@@ -18,7 +18,7 @@ if doNames
         imNames = imageNamesC;
     end    
 end
-    
+  
 % Convert to images
 idx = 1;
 for i=1:length(blobs)
@@ -26,7 +26,10 @@ for i=1:length(blobs)
         blobs{i}.size = sum(sum(blobs{i}.mask));
     end
     if blobs{i}.size > minSize
+        [mask, temp] = Blob2Mask(blobs{i}, image);
+        
         images{idx} = Blob2Image(blobs{i}, image);
+        assert(all(all(all(temp == images{idx}))), 'incorrect func');
         if doNames
             iiNames{idx} = imNames{i};
         end

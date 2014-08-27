@@ -2,8 +2,6 @@
 %   Selective Search for Object Recognition,
 %   J.R.R. Uijlings, K.E.A. van de Sande, T. Gevers, A.W.M. Smeulders, IJCV 2013
 %%
-function demoPascal2007
-
 addpath('Dependencies');
 
 fprintf('Demo of how to run the code for:\n');
@@ -34,7 +32,7 @@ if(~exist('mexFelzenSegmentIndex'))
     fprintf('   International Journal of Computer Vision, 2004\n');
     fprintf('Source code/Project page:\n');
     fprintf('   http://www.cs.brown.edu/~pff/segment/\n');
-    fprintf('Note: A small Matlab wrapper was made. See demo.m for usage\n\n');
+    fprintf('Note: A small Matlab wrapper was made.\n');
 %     fprintf('   
     mex Dependencies/FelzenSegment/mexFelzenSegmentIndex.cpp -output mexFelzenSegmentIndex;
 end
@@ -43,12 +41,16 @@ end
 % Parameters. Note that this controls the number of hierarchical
 % segmentations which are combined.
 colorTypes = {'Hsv', 'Lab', 'RGI', 'H', 'Intensity'};
+% colorType = colorTypes{1}; % Single color space for demo
 
 % Here you specify which similarity functions to use in merging
 simFunctionHandles = {@SSSimColourTextureSizeFillOrig, @SSSimTextureSizeFill, @SSSimBoxFillOrig, @SSSimSize};
+% simFunctionHandles = simFunctionHandles(1:2); % Two different merging strategies
 
 % Thresholds for the Felzenszwalb and Huttenlocher segmentation algorithm.
 % Note that by default, we set minSize = k, and sigma = 0.8.
+% k = 200; % controls size of segments of initial segmentation. 
+% minSize = k;
 ks = [50 100 150 300]; % controls size of segments of initial segmentation. 
 sigma = 0.8;
 
@@ -56,65 +58,46 @@ sigma = 0.8;
 % than minBoxWidth (default = 20 pixels).
 minBoxWidth = 20;
 
-% Comment the following three lines for the 'quality' version
-% colorTypes = colorTypes(1:2); % 'Fast' uses HSV and Lab
-% simFunctionHandles = simFunctionHandles(1:2); % Two different merging strategies
-% ks = ks(1:2);
+% As an example, use a single image
+images = {'/home/ahumayun/Dropbox/NFoundSeg/JPEGImages/2008_007998.jpg'};
+im = imread(images{1});
 
-% Test the boxes
-load('GroundTruthVOC2007test.mat'); % Load ground truth boxes and images and image names
-VOCImgPath = '/media/Data/Databases/VOCdevkit/VOC2007/JPEGImages/%s.jpg'
-fprintf('After box extraction, boxes smaller than %d pixels will be removed\n', minBoxWidth);
-fprintf('Obtaining boxes for Pascal 2007 test set:\n');
+% % Perform Selective Search
+% [boxes blobIndIm blobBoxes hierarchy] = Image2HierarchicalGrouping(im, sigma, k, minSize, colorType, simFunctionHandles);
+% boxes = BoxRemoveDuplicates(boxes);
+% 
+% % Show boxes
+% % ShowRectsWithinImage(boxes, 5, 5, im);
+% 
+% % Show blobs which result from first similarity function
+% hBlobs = RecreateBlobHierarchyIndIm(blobIndIm, blobBoxes, hierarchy{1});
+% ShowBlobs(hBlobs, 5, 5, im);
+
 totalTime = 0;
-validims = [];
-for i=1:length(testIms)
-    imfilepath = sprintf(VOCImgPath, ['2007_', testIms{i}]);
-    if ~exist(imfilepath, 'file')
-        continue;
+idx = 1;
+for j=1:length(ks)
+    k = ks(j); % Segmentation threshold k
+    minSize = k; % We set minSize = k
+    for n = 1:length(colorTypes)
+        colorType = colorTypes{n};
+        tic;
+        [boxesT{idx} blobIndIm blobBoxes hierarchy priorityT{idx}] = Image2HierarchicalGrouping(im, sigma, k, minSize, colorType, simFunctionHandles);
+        totalTime = totalTime + toc;
+        idx = idx + 1;
     end
-    validims = [validims i];
 end
-testIms = testIms(validims);
-testIms = testIms(1:3);
-for i=1:length(testIms)
-    fprintf('%d ', i);
-    
-    % VOCopts.img
-    im = imread(sprintf(VOCImgPath, ['2007_', testIms{i}]));
-    idx = 1;
-    for j=1:length(ks)
-        k = ks(j); % Segmentation threshold k
-        minSize = k; % We set minSize = k
-        for n = 1:length(colorTypes)
-            colorType = colorTypes{n};
-            tic;
-            [boxesT{idx} blobIndIm blobBoxes hierarchy priorityT{idx}] = Image2HierarchicalGrouping(im, sigma, k, minSize, colorType, simFunctionHandles);
-            totalTime = totalTime + toc;
-            idx = idx + 1;
-        end
-    end
-    boxes{i} = cat(1, boxesT{:}); % Concatenate boxes from all hierarchies
-    priority = cat(1, priorityT{:}); % Concatenate priorities
-    
-    % Do pseudo random sorting as in paper
-    priority = priority .* rand(size(priority));
-    [priority sortIds] = sort(priority, 'ascend');
-    boxes{i} = boxes{i}(sortIds,:);
-end
+boxes = cat(1, boxesT{:}); % Concatenate boxes from all hierarchies
+priority = cat(1, priorityT{:}); % Concatenate priorities
+
+% Do pseudo random sorting as in paper
+priority = priority .* rand(size(priority));
+[priority, sortIds] = sort(priority, 'ascend');
+boxes = boxes(sortIds,:);
 fprintf('\n');
 
-%%
 tic
-for i=1:length(boxes)
-    boxes{i} = FilterBoxesWidth(boxes{i}, minBoxWidth);
-    boxes{i} = BoxRemoveDuplicates(boxes{i});
-end
+boxes = FilterBoxesWidth(boxes, minBoxWidth);
+boxes = BoxRemoveDuplicates(boxes);
 totalTime = totalTime + toc;
 
-fprintf('Time per image: %.2f\nNow evaluating the boxes on Pascal 2007...\n', totalTime ./ length(testIms));
-
-%%
-[boxAbo boxMabo boScores avgNumBoxes] = BoxAverageBestOverlap(gtBoxes, gtImIds, boxes);
-
-fprintf('Mean Average Best Overlap for the box-based locations: %.3f\n', boxMabo);
+fprintf('Time for this image %.2f ...\n', totalTime);
