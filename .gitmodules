@@ -13,3 +13,6 @@
 [submodule "machine_learning/caffe"]
 	path = machine_learning/caffe
 	url = https://github.com/BVLC/caffe.git
+[submodule "segmentation/segments--hariharan_ECCV_2014_detseg"]
+	path = segmentation/segments--hariharan_ECCV_2014_detseg
+	url = https://github.com/bharath272/sds_eccv2014.git
