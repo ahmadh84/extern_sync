@@ -10,9 +10,6 @@
 [submodule "segmentation/boundaries--isola_ECCV_2014_crispboundaries"]
 	path = segmentation/boundaries--isola_ECCV_2014_crispboundaries
 	url = git@github.com:phillipi/crisp-boundaries.git
-[submodule "segmentation/segments--bharath_ECCV_2014_detseg"]
-	path = segmentation/segments--bharath_ECCV_2014_detseg
-	url = https://github.com/bharath272/sds_eccv2014.git
 [submodule "machine_learning/caffe"]
 	path = machine_learning/caffe
 	url = https://github.com/BVLC/caffe.git
