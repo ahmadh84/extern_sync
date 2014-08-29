@@ -1,0 +1,1 @@
+Find the license for this code in the code/ folder and the licenses for the external libraries in the lib/folder.
