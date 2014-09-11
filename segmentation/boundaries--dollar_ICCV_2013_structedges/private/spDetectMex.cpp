@@ -1,7 +1,6 @@
 /*******************************************************************************
-* Structured Edge Detection Toolbox      Version 3.0
-* Copyright 2014 Piotr Dollar.  [pdollar-at-microsoft.com]
-* Please email me if you find bugs, or have suggestions or questions!
+* Structured Edge Detection Toolbox      Version 3.01
+* Code written by Piotr Dollar, 2014.
 * Licensed under the MSR-LA Full Rights License [see license.txt]
 *******************************************************************************/
 #include <mex.h>
@@ -208,7 +207,7 @@ void affinities( float *A, uint *S, uint h, uint w, float *E,
   const uint g=dims[0], h1=dims[2], w1=dims[3], nTreesEval=dims[4];
   const uint stride=uint( float(h)/float(h1) + .5f );
   uint m=0; for( uint x=0; x<w*h; x++ ) m=S[x]>m ? S[x] : m; m++;
-  float *wts=new float[w*h], *Sn=new float[m*m], *Sd=new float[m*m];
+  float *wts=new float[w*h], *Sn=new float[m*m](), *Sd=new float[m*m]();
   for(uint i=0; i<w*h; i++) wts[i]=1/(1+exp((E[i]-.05f)*50.f));
   #ifdef USEOMP
   nThreads = min(nThreads,uint(omp_get_max_threads()));
