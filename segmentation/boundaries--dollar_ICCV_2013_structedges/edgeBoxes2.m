@@ -1,8 +1,8 @@
-function bbs = edgeBoxes( I, model, varargin )
+function [bbs,extra_info] = edgeBoxes2( I, model, varargin )
 % Generate Edge Boxes object proposals in given image(s).
 %
 % Compute Edge Boxes object proposals as described in:
-%  C. Lawrence Zitnick and Piotr Doll�r
+%  C. Lawrence Zitnick and Piotr Dollár
 %  "Edge Boxes: Locating Object Proposals from Edges", ECCV 2014.
 % The proposal boxes are fast to compute and give state-of-the-art recall.
 % Please cite the above paper if you end up using the code.
@@ -73,15 +73,17 @@ o=getPrmDflt(varargin,dfs,1); if(nargin==0), bbs=o; return; end
 f=o.name;
 if(~isempty(f) && exist(f,'file'))
     bbs=1; 
+    extra_info = {};
     return; 
 end
 if(~iscell(I))
-    bbs=edgeBoxesImg(I,model,o); 
+    [bbs, extra_info]=edgeBoxesImg(I,model,o); 
 else
     n=length(I);
     bbs=cell(n,1); 
+    extra_info=cell(n,1);
     parfor i=1:n, 
-        bbs{i}=edgeBoxesImg(I{i},model,o); 
+        [bbs{i},extra_info{i}]=edgeBoxesImg(I{i},model,o); 
     end; 
 end
 d=fileparts(f); 
@@ -95,7 +97,7 @@ end
 
 end
 
-function bbs = edgeBoxesImg( I, model, o )
+function [bbs,extra_info] = edgeBoxesImg( I, model, o )
 % Generate Edge Boxes object proposals in single image.
 if(all(ischar(I))), 
     I=imread(I); 
@@ -114,27 +116,6 @@ T=edgesNmsMex(E,O,2,0,1,model.opts.nThreads);
                      o.edgeMinMag, o.edgeMergeThr, o.clusterMinMag,...
                      o.maxAspectRatio, o.minBoxArea, o.gamma,o.kappa);
 assert(all(all(bbs == bbs2)));
-% assert(all(all(all(V == V2))));
 
-% bottles(bbs, segIds, edgeArr, segR, segC);
-
-[V3] = drawBox(bbs, 1, segIds, edgeArr);
-
-for idx = 1:size(bbs,1)
-    fprintf('%d\n',idx);
-    temp1 = V(:,:,idx);
-    temp2 = drawBox(bbs, idx, segIds, edgeArr);
-    assert(all(all(temp1 == temp2)));
-end
-
-%% set up opts for spDetect (see spDetect.m)
-opts = spDetect;
-opts.nThreads = 4;  % number of computation threads
-opts.k = 512;       % controls scale of superpixels (big k -> big sp)
-opts.alpha = .5;    % relative importance of regularity versus data terms
-opts.beta = .9;     % relative importance of edge versus color terms
-opts.merge = 0;     % set to small value to merge nearby superpixels at end
-
-%% detect and display superpixels (see spDetect.m)
-tic, [S,V] = spDetect(I,E,opts); toc
+extra_info = {V,segIds,edgeArr,E,O,T};
 end
