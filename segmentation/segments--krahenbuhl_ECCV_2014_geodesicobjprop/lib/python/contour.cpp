@@ -30,8 +30,6 @@
 #include "contour/directedsobel.h"
 #include "contour/sketchtokens.h"
 #include "contour/structuredforest.h"
-#include "contour/spboundarydetector.h"
-#include "contour/spstructuredforest.h"
 
 static void StructuredForest_fitAndAddTree1( StructuredForest & that, const Features & f, const RMatrixXf & lbl, const RMatrixXb & patch_data, const VectorXi & fid ) {
 	that.fitAndAddTree( f, lbl, patch_data, fid );
@@ -117,10 +115,4 @@ void defineContour() {
 	.def( "setFromMatlab", &StructuredForest::setFromMatlab );
 	
 	class_< MultiScaleStructuredForest, bases<StructuredForest> >("MultiScaleStructuredForest", init<>() );
-	class_< SPBoundaryDetector, boost::noncopyable >("SPBoundaryDetector", no_init )
-	.def( "detect", &SPBoundaryDetector::detect );
-	
-	class_< SPStructuredForest, bases<SPBoundaryDetector> >( "SPStructuredForest", init<StructuredForest>() )
-	.def( "computeHistPerTree", &SPStructuredForest::computeHistPerTree );
-	
 }

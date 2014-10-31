@@ -26,7 +26,6 @@
 */
 #pragma once
 #include "unaryfeature.h"
-#include "util.h"
 #include "segmentation/segmentation.h"
 
 class Unary {

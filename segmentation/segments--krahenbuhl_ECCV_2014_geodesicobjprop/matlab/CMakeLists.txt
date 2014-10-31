@@ -8,9 +8,15 @@ SET( CMAKE_SHARED_LIBRARY_SUFFIX .mexa64 )
 SET( CMAKE_SHARED_LIBRARY_PREFIX )
 
 # Setup the Build flags
-SET( CMAKE_CXX_FLAGS "-cxx -largeArrayDims CXXFLAGS='$$CXXFLAGS -std=c++11'" )
+SET( CMAKE_C_FLAGS "" )
+SET( CMAKE_CXX_FLAGS "-cxx -largeArrayDims CXXFLAGS='$$CXXFLAGS -std=c++11 -D_GLIBCXX_USE_NANOSLEEP'" )
 SET( CMAKE_CXX_FLAGS_RELEASE "" )          # Remove any -O flags
 SET( CMAKE_POSITION_INDEPENDENT_CODE OFF ) # Remove the -fPIC flag
+SET( CMAKE_SHARED_LIBRARY_C_FLAGS "" )     # Remove the -fPIC flag
+SET( CMAKE_SHARED_LIBRARY_CXX_FLAGS "" )   # Remove the -fPIC flag
+SET( CMAKE_SHARED_MODULE_C_FLAGS "" )      # Remove the -fPIC flag
+SET( CMAKE_SHARED_MODULE_CXX_FLAGS "" )    # Remove the -fPIC flag
+
 SET( CMAKE_CXX_COMPILE_OBJECT "<CMAKE_CXX_COMPILER> <DEFINES> <FLAGS> -outdir <OBJECT_DIR> -c <SOURCE>; mv <OBJECT_DIR>/$$(basename <SOURCE> .cpp ).o <OBJECT>" )
 
 # Variables controlling the linking-phase

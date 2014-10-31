@@ -27,7 +27,7 @@
 #include "segmentation/segmentation.h"
 #include "proposals/seed.h"
 #include "proposals/proposal.h"
-#include "proposals/util.h"
+#include "proposals/geodesics.h"
 #include "proposals/unary.h"
 #include "proposals/saliency.h"
 #include "gop.h"
@@ -35,31 +35,23 @@
 #include "map.h"
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
-static void LearnedSeed_train1( LearnedSeed & that, const list & gops, const list & lbl, int max_seed ) {
+static void LearnedSeed_train1( LearnedSeed & that, const std::vector< std::shared_ptr<ImageOverSegmentation> > & ios, const list & lbl, int max_seed ) {
 	// Load the data
-	std::vector<ImageOverSegmentation*> v_gops;
 	std::vector<VectorXs> v_lbl;
-	if( len(gops) != len(lbl) )
+	if( ios.size() != len(lbl) )
 		throw std::invalid_argument("gops and lbls size does not match!");
-	for( int i=0; i<len(gops); i++ ) {
-		v_gops.push_back( extract<ImageOverSegmentation*>(gops[i]) );
+	for( int i=0; i<len(lbl); i++ )
 		v_lbl.push_back( mapVectorX<short>(extract<np::ndarray>(lbl[i])) );
-	}
-	that.train( v_gops, v_lbl, max_seed );
+	that.train( ios, v_lbl, max_seed );
 }
-static void LearnedSeed_train2( LearnedSeed & that, const list & gops, const list & lbl, const list & weight, int max_seed ) {
+static void LearnedSeed_train2( LearnedSeed & that, const std::vector< std::shared_ptr<ImageOverSegmentation> > & ios, const list & lbl, int max_seed, int n_seed_per_obj ) {
 	// Load the data
-	std::vector<ImageOverSegmentation*> v_gops;
 	std::vector<VectorXs> v_lbl;
-	std::vector<VectorXf> v_weight;
-	if( len(gops) != len(lbl) )
+	if( ios.size() != len(lbl) )
 		throw std::invalid_argument("gops and lbls size does not match!");
-	for( int i=0; i<len(gops); i++ ) {
-		v_gops.push_back( extract<ImageOverSegmentation*>(gops[i]) );
+	for( int i=0; i<len(lbl); i++ )
 		v_lbl.push_back( mapVectorX<short>(extract<np::ndarray>(lbl[i])) );
-		v_weight.push_back( mapVectorX<float>(extract<np::ndarray>(weight[i])) );
-	}
-	that.train( v_gops, v_lbl, v_weight, max_seed );
+	that.train( ios, v_lbl, max_seed, n_seed_per_obj );
 }
 static np::ndarray Unary_compute( const Unary & that, int seed ) {
 	return toNumpy( that.compute( seed ) );

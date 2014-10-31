@@ -26,6 +26,7 @@
 */
 #pragma once
 #include <memory>
+#include <string>
 
 struct AggregationFunction {
 	virtual void add( float v, float w=1 ) = 0;

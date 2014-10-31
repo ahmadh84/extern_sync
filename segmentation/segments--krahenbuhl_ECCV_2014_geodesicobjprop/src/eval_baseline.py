@@ -1,3 +1,4 @@
+# -*- encoding: utf-8
 """
     Copyright (c) 2014, Philipp Krähenbühl
     All rights reserved.
@@ -24,7 +25,7 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from gop import *
+# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8from gop import *
 import numpy as np
 from util import *
 
@@ -32,6 +33,7 @@ LATEX_OUTPUT=True
 
 # Load the dataset
 over_segs,segmentations,boxes = loadVOCAndOverSeg( "test", detector='mssf', year="2012" )
+#over_segs,segmentations,boxes = loadCOCOAndOverSeg( "valid", N_SPIX=2000, detector='mssf', fold=0 )
 has_box = [len(b)>0 for b in boxes]
 boxes = [np.vstack(b).astype(np.int32) if len(b)>0 else np.zeros((0,4),dtype=np.int32) for b in boxes]
 
@@ -42,7 +44,7 @@ s.append( (150,7,0.85) ) # ~1100 props
 s.append( (200,10,0.9) ) # ~2200 props
 s.append( (300,15,0.9) ) # ~4400 props
 for N_S,N_T,iou in s:
-	prop_settings = setupBaseline( N_S, N_T, iou )
+	prop_settings = setupBaseline( N_S, N_T, iou, SEED_PROPOSAL=True )
 	bo,b_bo,pool_s,box_pool_s = dataset.proposeAndEvaluate( over_segs, segmentations, boxes, proposals.Proposal( prop_settings ) )
 	if LATEX_OUTPUT:
 		print( "Baseline GOP ($%d$,$%d$) & %d & %0.3f & %0.3f & %0.3f & %0.3f &  \\\\"%(N_S,N_T,np.mean(pool_s),np.mean(bo[:,0]),np.sum(bo[:,0]*bo[:,1])/np.sum(bo[:,1]), np.mean(bo[:,0]>=0.5), np.mean(bo[:,0]>=0.7) ) )
@@ -55,3 +57,4 @@ for N_S,N_T,iou in s:
 		print( "box ABO    ", np.mean(b_bo) )
 		print( "box recall ", np.mean(b_bo>=0.5), "\t", np.mean(b_bo>=0.6), "\t", np.mean(b_bo>=0.7), "\t", np.mean(b_bo>=0.8), "\t", np.mean(b_bo>=0.9), "\t", np.mean(b_bo>=1) )
 		print( "# box      ", np.mean(box_pool_s[~np.isnan(box_pool_s)]) )
+

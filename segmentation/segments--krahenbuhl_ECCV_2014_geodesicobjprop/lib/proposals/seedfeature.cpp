@@ -25,7 +25,7 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "seedfeature.h"
-#include "util.h"
+#include "geodesics.h"
 #include "util/util.h"
 #include "segmentation/segmentation.h"
 #include "imgproc/color.h"
@@ -73,6 +73,9 @@ std::shared_ptr< TypedSeedCreator<T,ARGS...> > make_seed_creator( ARGS... args )
 template<typename T>
 std::shared_ptr< TypedSeedCreator<T> > make_seed_creator( ) {
 	return std::make_shared< TypedSeedCreator<T> >( );
+}
+void SeedFeatureFactory::clear() {
+	creator_.clear();
 }
 
 //////////////////////// Seed Feature Vector ////////////////////////

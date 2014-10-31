@@ -25,7 +25,7 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "unaryfeature.h"
-#include "util.h"
+#include "geodesics.h"
 #include "unary.h"
 #include "imgproc/color.h"
 #include "util/util.h"

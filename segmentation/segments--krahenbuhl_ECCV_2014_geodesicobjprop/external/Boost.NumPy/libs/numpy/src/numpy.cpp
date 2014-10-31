@@ -11,9 +11,13 @@ namespace boost
 {
 namespace numpy 
 {
-
+#if PY_MAJOR_VERSION >= 3
+int init_numpy() { import_array(); }
+#else
+void init_numpy() { import_array(); }
+#endif
 static void* initialize2(bool register_scalar_converters) {
-	import_array();
+	init_numpy();
 	import_ufunc();
 	if (register_scalar_converters)
 		dtype::register_scalar_converters();

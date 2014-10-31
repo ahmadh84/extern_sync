@@ -436,3 +436,21 @@ VectorXf LBFGS::minimize(const EnergyFunction &f, int verbose) const {
 	float tmp = 0;
 	return minimize(f, tmp, verbose);
 }
+
+
+SGD::SGD( float alpha, int n_iter, int mini_batch_size ) : alpha_( alpha ), n_iter_(n_iter), mb_size_( mini_batch_size ) {
+}
+VectorXf SGD::minimize( const EnergyFunction &f, float &e, int verbose ) const {
+	// For now just use GD
+	VectorXf x = f.optimizationInitialGuess();
+	for( int i=0; i<n_iter_; i++ ) {
+		x -= alpha_ * f.optimizationGradient( x, e );
+		if( verbose )
+			printf("SGD[%d] = %f\n", i, e );
+	}
+	return f.optimizationTransformResult( x );
+}
+VectorXf SGD::minimize( const EnergyFunction &f, int verbose ) const {
+	float e;
+	return minimize( f, e, verbose );
+}

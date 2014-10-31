@@ -27,21 +27,18 @@
 #pragma once
 #include <boost/python.hpp>
 #include <boost/numpy.hpp>
-#include <util/eigen.h>
+#include "util/eigen.h"
+#include "util/rasterize.h"
 
 class ImageOverSegmentation;
 using namespace boost::python;
 namespace np = boost::numpy;
 
-float covering( const np::ndarray & gt_set, const np::ndarray & over_seg, const np::ndarray & props );
-float segCovering( const np::ndarray & gt_set, const np::ndarray & over_seg, const np::ndarray & props );
-
-np::ndarray coveringVec( const np::ndarray & gt_set, const np::ndarray & over_seg, const np::ndarray & props );
-np::ndarray segCoveringVec( const np::ndarray & gt_set, const np::ndarray & over_seg, const np::ndarray & props );
-
 struct ProposalEvaluation {
 	ProposalEvaluation( const short * gt_seg, int W, int H, int D, const RMatrixXs & over_seg, const RMatrixXb & props );
 	ProposalEvaluation( const short * gt_seg, int W, int H, int D, const std::vector<RMatrixXs> & over_seg, const std::vector<RMatrixXb> & props );
+	ProposalEvaluation( const std::vector<Polygons> & regions, const RMatrixXs & over_seg, const RMatrixXb & props );
+	ProposalEvaluation( const std::vector<Polygons> & regions, const std::vector<RMatrixXs> & over_seg, const std::vector<RMatrixXb> & props );
 	VectorXf bo_;
 	VectorXf area_;
 	float pool_size_;

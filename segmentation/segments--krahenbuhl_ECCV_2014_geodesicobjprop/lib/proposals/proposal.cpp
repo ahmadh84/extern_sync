@@ -25,7 +25,7 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "proposal.h"
-#include "util.h"
+#include "geodesics.h"
 #include "util/util.h"
 #include "edgefeature.h"
 #include "segmentation/iouset.h"
@@ -55,6 +55,17 @@ void Proposal::proposeAll( const ImageOverSegmentation & ios, const VectorXi & s
 		// we cant generate background only segmentations with non static background unaries
 		if( !us.bg_unary->isStatic() && us.n_seed==0 )
 			continue;
+		
+		// Seed only proposal
+		if( us.max_size == 0 ) {
+			for( int k=0; k<us.n_seed && k<seeds.size(); k++ ) {
+				VectorXf fg = VectorXf::Ones( ios.Ns() );
+				fg[seeds[k]] = 0;
+				f( fg, 0.5, 1e-3, nu, k, 0 );
+			}
+			continue;
+		}
+		
 		GeodesicDistance gdist( ios.edges(), us.edge_weight->compute( ios ) );
 		// Compute the BG geodesics
 		std::vector<VectorXf> background;

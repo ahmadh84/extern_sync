@@ -26,17 +26,19 @@
 */
 #pragma once
 #include <vector>
+#include <memory>
+#include <stdexcept>
 #include "util/eigen.h"
 
 namespace ImagePrivate {
 	template<typename T> struct ImageHelper {
-		static constexpr float range = 1.;
+		static const int range = 1;
 	};
 	template<> struct ImageHelper<uint8_t> {
-		static constexpr float range = 255.;
+		static const int range = 255;
 	};
 	template<> struct ImageHelper<uint16_t> {
-		static constexpr float range = 65535.;
+		static const int range = 65535;
 	};
 }
 
@@ -70,7 +72,7 @@ public:
 template<typename TO>
 	TypedImage( const TypedImage<TO>& o ):data_(NULL),external_data_(false),W_(0),H_(0),C_(0) {
 		using namespace ImagePrivate;
-		const float f = ImageHelper<T>::range / ImageHelper<TO>::range;
+		const float f = (float)ImageHelper<T>::range / (float)ImageHelper<TO>::range;
 		create( o.W_, o.H_, o.C_ );
 		for( int i=0; i<W_*H_*C_; i++ )
 			data_[i] = f*o.data_[i];
@@ -92,7 +94,7 @@ template<typename TO>
 template<typename TO>
 	TypedImage<T> & operator=( const TypedImage<TO>& o ) {
 		using namespace ImagePrivate;
-		const float f = ImageHelper<T>::range / ImageHelper<TO>::range;
+		const float f = (float)ImageHelper<T>::range / (float)ImageHelper<TO>::range;
 		create( o.W_, o.H_, o.C_ );
 		for( int i=0; i<W_*H_*C_; i++ )
 			data_[i] = f*o.data_[i];
@@ -143,7 +145,7 @@ template<int N>
 	TypedImage<T> & operator=( const RMatrixX<T> & o ) {
 		if( 1!=C_ )
 			throw std::invalid_argument( "Matrix and Image channels do not match!" );
-		Map< RMatrixXf >( data(), H_, W_ ) = o;
+		Map< RMatrixX<T> >( data(), H_, W_ ) = o;
 		return *this;
 	}
 template<int N>
@@ -172,6 +174,14 @@ template<int N>
 	const T * cbegin() const { return data_; }
 	const T * cend() const { return data_+W_*H_*C_; }
 	
+	TypedImage<T> tileC( int C ) const {
+		TypedImage<T> r( W_, H_, C );
+		for( int i=0; i<W_*H_; i++ )
+			for( int c=0; c<C; c++ )
+				r.data_[i*C+c] = data_[i*C_+(c%C_)];
+		return r;
+	}
+	
 	virtual void save( std::ostream & s ) const {
 		int sz[3] = {W_,H_,C_};
 		s.write((const char*)sz,sizeof(sz));
@@ -188,5 +198,8 @@ template<int N>
 typedef TypedImage<float> Image;
 typedef TypedImage<uint8_t> Image8u;
 
+#ifndef NO_IMREAD
 Image8u imread( const std::string &file_name );
+std::shared_ptr<Image8u> imreadShared( const std::string &file_name );
 void imwrite( const std::string & file_name, const Image8u & im );
+#endif

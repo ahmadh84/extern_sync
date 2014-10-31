@@ -26,10 +26,10 @@
 */
 #pragma once
 #include "util/eigen.h"
-#include "util/graph.h"
-#include "imgproc/image.h"
+#include <boost/python.hpp>
+#include <boost/numpy.hpp>
+using namespace boost::python;
+namespace np = boost::numpy;
 
-class SPBoundaryDetector {
-public:
-	virtual VectorXf detect( const Image8u & im, const RMatrixXs & s, const Edges & edges ) const = 0;
-};
+list loadCOCO2014( bool train, bool valid, int fold );
+int cocoNFolds();

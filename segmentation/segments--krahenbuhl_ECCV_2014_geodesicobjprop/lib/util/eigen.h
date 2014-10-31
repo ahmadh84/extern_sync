@@ -25,7 +25,10 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #pragma once
+#include "win_util.h"
+#include <cstdint>
 #include <Eigen/Core>
+#include <Eigen/SparseCore>
 using namespace Eigen;
 
 #define DEFINE_MAT( N )\
@@ -39,14 +42,6 @@ typedef N<int8_t>( N ## i8 );\
 typedef N<uint8_t>( N ## u8 );\
 typedef N<bool>( N ## b )
 
-template<typename T>
-using RMatrixX = Matrix<T,Dynamic,Dynamic,RowMajor>;
-DEFINE_MAT( RMatrixX );
-
-template<typename T>
-using RArrayXX = Array<T,Dynamic,Dynamic,RowMajor>;
-DEFINE_MAT( RArrayXX );
-
 #define DEFINE_MAT2( N )\
 typedef N<uint32_t>( N ## u );\
 typedef N<int16_t>( N ## s );\
@@ -55,34 +50,36 @@ typedef N<int8_t>( N ## i8 );\
 typedef N<uint8_t>( N ## u8 );\
 typedef N<bool>( N ## b )
 
-template<typename T>
-using MatrixX = Matrix<T,Dynamic,Dynamic>;
+template<typename T> using RowVectorX = Matrix<T,1,Dynamic>;
+template<typename T> using RMatrixX = Matrix<T,Dynamic,Dynamic,RowMajor>;
+template<typename T> using SMatrixX = SparseMatrix<T>;
+template<typename T> using SRMatrixX = SparseMatrix<T,RowMajor>;
+template<typename T> using RArrayXX = Array<T,Dynamic,Dynamic,RowMajor>;
+template<typename T> using MatrixX = Matrix<T,Dynamic,Dynamic>;
+template<typename T> using ArrayXX = Array<T,Dynamic,Dynamic>;
+template<typename T> using VectorX = Matrix<T,Dynamic,1>;
+template<typename T> using ArrayX = Array<T,Dynamic,1>;
+
+DEFINE_MAT( RMatrixX );
+DEFINE_MAT( SMatrixX );
+DEFINE_MAT( SRMatrixX );
+DEFINE_MAT( RArrayXX );
 DEFINE_MAT2( MatrixX );
-
-template<typename T>
-using ArrayXX = Array<T,Dynamic,Dynamic>;
 DEFINE_MAT2( ArrayXX );
-
-template<typename T>
-using VectorX = Matrix<T,Dynamic,1>;
 DEFINE_MAT2( VectorX );
-
-template<typename T>
-using ArrayX = Array<T,Dynamic,1>;
 DEFINE_MAT2( ArrayX );
 
-
 namespace std{
-	template< typename T, int R, int C, int O, int RR, int CC > const T * begin( const Eigen::Matrix<T,R,C,O,RR,CC> & m ){
+	template< typename T, int R, int C, int O, int RR, int CC > const T * begin( const Matrix<T,R,C,O,RR,CC> & m ){
 		return m.data();
 	}
-	template< typename T, int R, int C, int O, int RR, int CC > const T * end( const Eigen::Matrix<T,R,C,O,RR,CC> & m ){
+	template< typename T, int R, int C, int O, int RR, int CC > const T * end( const Matrix<T,R,C,O,RR,CC> & m ){
 		return m.data()+m.size();
 	}
-	template< typename T, int R, int C, int O, int RR, int CC > T * begin( Eigen::Matrix<T,R,C,O,RR,CC> & m ){
+	template< typename T, int R, int C, int O, int RR, int CC > T * begin( Matrix<T,R,C,O,RR,CC> & m ){
 		return m.data();
 	}
-	template< typename T, int R, int C, int O, int RR, int CC > T * end( Eigen::Matrix<T,R,C,O,RR,CC> & m ){
+	template< typename T, int R, int C, int O, int RR, int CC > T * end( Matrix<T,R,C,O,RR,CC> & m ){
 		return m.data()+m.size();
 	}
 }
@@ -102,4 +99,3 @@ void loadMatrixX( std::istream & s, Matrix<T,C,R,O> & m ) {
 	m = Matrix<T,C,R>(rc[0],rc[1]);
 	s.read( (char*)m.data(), m.size()*sizeof(T) );
 }
-

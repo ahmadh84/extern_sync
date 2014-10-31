@@ -159,7 +159,7 @@ public:
 	VectorSetUnaryFactory(const FeatureSet & t, float scale=1.0 ):t_(t), w_(VectorXf::Constant(UnaryFeatures::D(t),scale)), b_(0) {
 	}
 	VectorSetUnaryFactory( const std::string & filename ) {
-		std::ifstream is( filename );
+		std::ifstream is( filename, std::ios::in | std::ios::binary );
 		if(!is.is_open())
 			throw std::invalid_argument( "Could not open file '"+filename+"'!" );
 		t_.load( is );
@@ -168,7 +168,7 @@ public:
 		is.close();
 	}
 	void save( const std::string & filename ) const {
-		std::ofstream os( filename );
+		std::ofstream os( filename, std::ios::out | std::ios::binary );
 		if(!os.is_open())
 			throw std::invalid_argument( "Could not write file '"+filename+"'!" );
 		t_.save( os );

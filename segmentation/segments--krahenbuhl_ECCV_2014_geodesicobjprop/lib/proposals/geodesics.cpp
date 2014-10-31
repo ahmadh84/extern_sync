@@ -24,7 +24,7 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "util.h"
+#include "geodesics.h"
 #include "segmentation/segmentation.h"
 
 Node::Node( int to, float w ) : to( to ), w( w ) {

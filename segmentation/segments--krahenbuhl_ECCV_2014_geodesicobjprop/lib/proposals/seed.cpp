@@ -25,7 +25,7 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "seed.h"
-#include "util.h"
+#include "geodesics.h"
 #include "saliency.h"
 #include "util/algorithm.h"
 #include "util/optimization.h"
@@ -170,6 +170,10 @@ VectorXi SegmentationSeed::compute( const OverSegmentation & os, int M ) const {
 }
 
 LearnedSeed::LearnedSeed() {
+	initFeatures();
+}
+void LearnedSeed::initFeatures() {
+	features_.clear();
 	// Basic features
 	features_.addPosition();
 	features_.addColor();
@@ -184,133 +188,60 @@ LearnedSeed::LearnedSeed() {
 	features_.addGeodesicBnd(1,3,2e-3);
 	
 }
-void LearnedSeed::train( const std::vector< ImageOverSegmentation > &ios, const std::vector<VectorXs> & lbl, const std::vector<VectorXf> & weight, int max_feature ) {
+void LearnedSeed::train( const std::vector< std::shared_ptr<ImageOverSegmentation> > &ios, const std::vector<VectorXs> & lbl, int max_feature, int n_seed_per_obj ) {
 	std::vector< SeedFeatureVector > f;
-	for( const auto & g: ios )
-		f.push_back( features_.create( g ) );
-	train( f, lbl, weight, max_feature );
-}
-void LearnedSeed::train( const std::vector< ImageOverSegmentation* > &ios, const std::vector<VectorXs> & lbl, const std::vector<VectorXf> & weight, int max_feature ) {
-	std::vector< SeedFeatureVector > f;
-	for( const auto * g: ios )
+	for( auto g: ios )
 		f.push_back( features_.create( *g ) );
-	train( f, lbl, weight, max_feature );
+	train( f, lbl, max_feature, n_seed_per_obj );
 }
-void LearnedSeed::train( const std::vector< ImageOverSegmentation > &ios, const std::vector<VectorXs> & lbl, int max_feature ) {
-	std::vector<VectorXf> weight( lbl.size() );
-	for( int i=0; i<lbl.size(); i++ )
-		weight[i] = VectorXf::Ones( lbl[i].size() );
-	train( ios, lbl, weight, max_feature );
-}
-void LearnedSeed::train( const std::vector< ImageOverSegmentation* > &ios, const std::vector<VectorXs> & lbl, int max_feature ) {
-	std::vector<VectorXf> weight( lbl.size() );
-	for( int i=0; i<lbl.size(); i++ )
-		weight[i] = VectorXf::Ones( lbl[i].size() );
-	train( ios, lbl, weight, max_feature );
-}
-
-class LogisticSeedTrainer: public EnergyFunction {
-protected:
-	std::vector<int> ids_;
-	const std::vector<SeedFeatureVector> & f_;
-	const std::vector<VectorXb> & l_;
-public:
-	LogisticSeedTrainer( const std::vector<SeedFeatureVector> & f, const std::vector<VectorXb> & l, const std::vector<bool> & active ): f_(f), l_(l) {
-		for( int i=0; i<(int)active.size(); i++ )
-			if( active[i] )
-				ids_.push_back( i );
-	}
-	virtual VectorXf initialGuess() const {
-		const int N = f_[0].dim();
-		return VectorXf::Zero( N );
-	}
-	virtual VectorXf gradient(const VectorXf &x, float &e) const {
-		const float L2_norm = 1e-5;
-		e = 0;
-		VectorXf g = 0*x;
-#pragma omp parallel for
-		for( int i=0; i<(int)ids_.size(); i++ ) {
-			int id = ids_[i];
-			RMatrixXf fm = f_[id];
-			// Subtract the colwise mean (to make things more numerically stable) [might need to do it a few times]
-			fm.rowwise() -= fm.colwise().mean();
-			fm.rowwise() -= fm.colwise().mean();
-			fm.rowwise() -= fm.colwise().mean();
-			
-			// Compute the response
-			VectorXf fx = fm * x;
-			float mx = fx.maxCoeff(), spos=0;
-			
-			// Compute the prob dist
-			VectorXf efx = (fx.array()-mx).exp();
-			efx.array() /= efx.array().sum()+1e-10;
-			for( int j=0; j<efx.size(); j++ )
-				if( l_[id][j] )
-					spos += efx[j];
-			
-			// Update the energy
-#pragma omp atomic
-			e -= spos;
-			
-			// Update the gradient
-			VectorXf gg = ((l_[id].cast<float>().array()-spos)*efx.array()).matrix().transpose()*fm;
-#pragma omp critical
-			g -= gg;
-		}
-		e += 0.5*L2_norm*x.squaredNorm();
-		g += L2_norm*x;
-		return g;
-	}
-};
 class LogLogisticSeedTrainer: public EnergyFunction {
 protected:
 	std::vector<int> ids_;
 	const std::vector<SeedFeatureVector> & f_;
 	const std::vector<VectorXb> & l_;
-	const std::vector<VectorXf> & w_;
+	VectorXf initial_guess_;
 public:
-	LogLogisticSeedTrainer( const std::vector<SeedFeatureVector> & f, const std::vector<VectorXb> & l, const std::vector<VectorXf> & w, const std::vector<bool> & active ): f_(f), l_(l), w_(w) {
+	LogLogisticSeedTrainer( const std::vector<SeedFeatureVector> & f, const std::vector<VectorXb> & l, const std::vector<bool> & active ): f_(f), l_(l) {
 		for( int i=0; i<(int)active.size(); i++ )
 			if( active[i] )
 				ids_.push_back( i );
+		
+		const int N = f_[0].dim();
+		initial_guess_ = VectorXf::Zero( N );
+	}
+	void setInitialGuess( const VectorXf & g ) {
+		initial_guess_ = g;
 	}
 	virtual VectorXf initialGuess() const {
-		const int N = f_[0].dim();
-		return VectorXf::Zero( N );
+		return initial_guess_;
 	}
 	virtual VectorXf gradient(const VectorXf &x, float &e) const {
-		const float L2_norm = 0, EPS = 1e-4;
+		const float L2_norm = 0/*, EPS = 1e-4*/;
 		e = 0;
 		double se = 0;
 		VectorXf g = 0*x;
 #pragma omp parallel for
 		for( int i=0; i<(int)ids_.size(); i++ ) {
 			int id = ids_[i];
-			RMatrixXf fm = f_[id];
+			RMatrixXf fm = ((RMatrixXf)f_[id]);
 			// Subtract the colwise mean (to make things more numerically stable) [might need to do it a few times]
 			fm.rowwise() -= fm.colwise().mean();
 			fm.rowwise() -= fm.colwise().mean();
 			fm.rowwise() -= fm.colwise().mean();
-			
 			// Compute the response
 			VectorXf fx = fm * x;
 			
-			// Compute the prob dist
-			// TODO: Make sure the mx and does not land in w_[id]=0
-			float mx = fx.maxCoeff();
-			VectorXf efx = w_[id].array()*(fx.array()-mx).exp();
-			
 			// Compute the positive prob dist
-			int n_pos = (l_[id].array() && (w_[id].array()>EPS)).cast<int>().sum();
-			VectorXf fx_pos( n_pos ), w_pos( n_pos );
-			for( int j=0,k=0; j<efx.size(); j++ )
-				if( l_[id][j] && w_[id][j] > EPS ) {
-					w_pos[k] = w_[id][j];
-					fx_pos[k] = fx[j];
-					k++;
-				}
-			float mx_pos = fx_pos.maxCoeff();
-			VectorXf efx_pos = w_pos.array()*(fx_pos.array()-mx_pos).exp();
+			int n_pos = l_[id].array().cast<int>().sum();
+			VectorXf fx_pos( n_pos );
+			for( int j=0,k=0; j<fx.size(); j++ )
+				if( l_[id][j] )
+					fx_pos[k++] = fx[j];
+			
+			// Compute the distribution
+			float mx = fx.maxCoeff(), mx_pos = fx_pos.maxCoeff();
+			VectorXf efx = (fx.array()-mx).exp(), efx_pos = (fx_pos.array()-mx_pos).exp();
+			
 			// Update the energy
 #pragma omp atomic
 			se -= log(efx_pos.array().sum())+mx_pos - (log(efx.array().sum())+mx);
@@ -320,9 +251,10 @@ public:
 			efx_pos.array() /= efx_pos.array().sum();
 			VectorXf gg = VectorXf::Zero( x.size() );
 			for( int j=0,k=0; j<efx.size(); j++ ) {
+				float d = efx[j];
 				if( l_[id][j] )
-					gg += efx_pos[k++] * fm.row(j);
-				gg -= efx[j] * fm.row(j);
+					d -= efx_pos[k++];
+				gg -= d * fm.row(j);
 			}
 			
 #pragma omp critical
@@ -333,28 +265,64 @@ public:
 		return g;
 	}
 };
-void LearnedSeed::train(std::vector< SeedFeatureVector > &f, const std::vector<VectorXs> & lbl, const std::vector<VectorXf> & weight, int max_seed) {
+void LearnedSeed::train(std::vector< SeedFeatureVector > &f, const std::vector<VectorXs> & lbl, int max_seed, int n_seed_per_obj ) {
+	const int N_SEED_PER_SEG = n_seed_per_obj;
+// 	printf("# RANDOM = %d\n", N_SEED_PER_SEG );
 	// Initialize the labels
 	std::vector< VectorXb > l( lbl.size() );
-	std::vector< VectorXf > w = weight;
 	std::vector< bool > active( lbl.size() );
-	std::vector< VectorXb > hit( lbl.size() );
+	std::vector< VectorXs > hit( lbl.size() );
 	int n_obj = 0, n_got_tot = 0;
 	for( int i=0; i<lbl.size(); i++ ) {
 		n_obj += lbl[i].maxCoeff()+1;
-		hit[i] = VectorXb::Zero( lbl[i].maxCoeff()+1 );
+		hit[i] = VectorXs::Zero( lbl[i].maxCoeff()+1 );
 		l[i] = lbl[i].array()>=0;
 		active[i] = l[i].any();
 	}
-	for( int it=0; it<max_seed; it++ ) {
-		LogLogisticSeedTrainer trainer( f, l, w, active );
-		// TODO: Maybe a few random initiaziations would work better
+	for( int it=0; it<max_seed && n_got_tot<n_obj; it++ ) {
+		LogLogisticSeedTrainer trainer( f, l, active );
+		// Maybe a few random initiaziations would work better
 		float e;
-		VectorXf new_w = minimizeLBFGS( trainer, e, false );
-		
+		VectorXf best_w;
+		int best_got=-1;
+		for( int n_init=0; n_init<5; n_init++ ) {
+			if( n_init>0 )
+				trainer.setInitialGuess( VectorXf::Random(trainer.initialGuess().size()) );
+			VectorXf new_w = minimizeLBFGS( trainer, e, false );
+			// Do a few restarts
+			for ( int n_restart=0; n_restart<2; n_restart++ ) {
+				trainer.setInitialGuess( new_w );
+				new_w = minimizeLBFGS( trainer, e, false );
+			}
+			
+			int n_got = 0;
+			// Update the seeds and features
+			for( int i=0; i<lbl.size(); i++ )
+				if( active[i] ){
+					RMatrixXf fm = f[i];
+					// Subtract the colwise mean (to make things more numerically stable)
+					fm.rowwise() -= fm.colwise().mean();
+					fm.rowwise() -= fm.colwise().mean();
+					fm.rowwise() -= fm.colwise().mean();
+					
+					// Compute the response
+					VectorXf fw = fm*new_w;
+					int mx=0;
+					fw.maxCoeff( &mx );
+					
+					// Remove the current segment (or part of it)
+					if( l[i][mx] )
+						n_got++;
+			}
+			if( n_got > best_got ) {
+				best_got = n_got;
+				best_w = new_w;
+			}
+		}
+		// Update the features
 		int n_got = 0, n_active = 0;
 		// Update the seeds and features
-		for( int i=0; i<lbl.size(); i++ ) 
+		for( int i=0; i<lbl.size(); i++ )
 			if( active[i] ){
 				RMatrixXf fm = f[i];
 				// Subtract the colwise mean (to make things more numerically stable)
@@ -363,7 +331,7 @@ void LearnedSeed::train(std::vector< SeedFeatureVector > &f, const std::vector<V
 				fm.rowwise() -= fm.colwise().mean();
 				
 				// Compute the response
-				VectorXf fw = fm*new_w;
+				VectorXf fw = fm*best_w;
 				int mx=0;
 				fw.maxCoeff( &mx );
 				
@@ -373,30 +341,28 @@ void LearnedSeed::train(std::vector< SeedFeatureVector > &f, const std::vector<V
 				n_active += active[i];
 				// Remove the current segment (or part of it)
 				if( l[i][mx] ) {
-// 					float ww = w[i][mx]+0.25;
-					for( int k=0; k<l[i].size(); k++ )
-						if(l[i][k] && lbl[i][k] == lbl[i][mx]) {
-							// Update the weight and label
-// 							w[i][k] -= ww;
-// 							if( w[i][k] < 1e-4 ) {
+					hit[i][ lbl[i][mx] ] += 1;
+					l[i][mx] = 0;
+					if ( hit[i][ lbl[i][mx] ] >= N_SEED_PER_SEG ) {
+						for( int k=0; k<l[i].size(); k++ )
+							if(l[i][k] && lbl[i][k] == lbl[i][mx]) {
+								// Update the weight and label
 								l[i][k] = 0;
-								w[i][k] = 1;
-// 							}
-						}
-					active[i] = l[i].any();
-					if(!hit[i][ lbl[i][mx] ])
+							}
+						active[i] = l[i].any();
 						n_got++;
-					hit[i][ lbl[i][mx] ] = 1;
+					}
 				}
 		}
 		
+		
 		// Add the learned feature
-		w_.push_back( new_w );
+		w_.push_back( best_w );
 		n_got_tot += n_got;
 		printf("[%3d]  Total objects %5.1f%%       Got %4d / %4d objects\r", it, 100.*n_got_tot/n_obj, n_got,n_active );
 		fflush( stdout );
 	}
-	printf("Training got %d / %d objects: %0.1f%%                            \n", n_got_tot, n_obj, 100.*n_got_tot/n_obj );
+	printf("\nTraining got %d / %d objects: %0.1f%%                            \n", n_got_tot, n_obj, 100.*n_got_tot/n_obj );
 }
 VectorXi LearnedSeed::computeImageOverSegmentation( const ImageOverSegmentation & ios, int M ) const {
 	SeedFeatureVector f = features_.create( ios );
@@ -422,7 +388,8 @@ VectorXi LearnedSeed::computeImageOverSegmentation( const ImageOverSegmentation 
 	return VectorXi::Map( r.data(), r.size() );
 }
 void LearnedSeed::load(std::istream &s) {
-	int M;
+	initFeatures();
+	int M=0;
 	s.read((char*)&M,sizeof(M));
 	w_.resize(M);
 	for( int i=0; i<M; i++ )
@@ -449,13 +416,13 @@ VectorXi SaliencySeed::computeImageOverSegmentation( const ImageOverSegmentation
 	return r;
 }
 void LearnedSeed::load(const std::string &s) {
-	std::ifstream is(s);
+	std::ifstream is(s, std::ios::in | std::ios::binary);
 	if(!is.is_open())
 		throw std::invalid_argument( "Could not open file '"+s+"'!" );
 	load(is);
 }
 void LearnedSeed::save(const std::string &s) const {
-	std::ofstream os(s);
+	std::ofstream os(s, std::ios::out | std::ios::binary);
 	if(!os.is_open())
 		throw std::invalid_argument( "Could not write file '"+s+"'!" );
 	save(os);

@@ -25,11 +25,19 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #pragma once
+#include <boost/version.hpp>
 #include <boost/python.hpp>
 #include <boost/numpy.hpp>
+#include <stdexcept>
+#include <memory>
 using namespace boost::python;
 namespace np = boost::numpy;
 #include "util/util.h"
+
+// Make older boost versions happy
+#if BOOST_VERSION < 105300
+template<typename T> T* get_pointer(const std::shared_ptr<T>& p) { return p.get(); }
+#endif
 
 #define checkArray( f, T, min_dim, max_dim, cont ) {\
 	if( f.get_dtype() != np::dtype::get_builtin<T>() )\
@@ -54,6 +62,49 @@ struct SaveLoad_pickle_suite : pickle_suite {
 			throw std::invalid_argument("Failed to unpickle, unexpected type!");
 		std::stringstream ss( std::string( PyBytes_AS_STRING(state.ptr()), PyBytes_Size(state.ptr()) ) );
 		obj.load( ss );
+	}
+};
+
+template<typename OBJ>
+struct SaveLoad_pickle_suite_shared_ptr : pickle_suite {
+	static object getstate(const std::shared_ptr<OBJ>& obj) {
+		std::stringstream ss;
+		obj->save( ss );
+		std::string data = ss.str();
+		return object( handle<>( PyBytes_FromStringAndSize( data.data(), data.size() ) ) );
+	}
+	
+	static void setstate(std::shared_ptr<OBJ> obj, const object & state) {
+		if(!PyBytes_Check(state.ptr()))
+			throw std::invalid_argument("Failed to unpickle, unexpected type!");
+		std::stringstream ss( std::string( PyBytes_AS_STRING(state.ptr()), PyBytes_Size(state.ptr()) ) );
+		obj->load( ss );
+	}
+};
+
+template<typename OBJ>
+struct VectorSaveLoad_pickle_suite_shared_ptr : pickle_suite {
+	static object getstate(const std::vector< std::shared_ptr<OBJ> > & obj) {
+		std::stringstream ss;
+		const int nobj = obj.size();
+		ss.write( (const char*)&nobj, sizeof(nobj) );
+		for( int i=0; i<nobj; i++ )
+			obj[i]->save( ss );
+		std::string data = ss.str();
+		return object( handle<>( PyBytes_FromStringAndSize( data.data(), data.size() ) ) );
+	}
+	
+	static void setstate(std::vector< std::shared_ptr<OBJ> > & obj, const object & state) {
+		if(!PyBytes_Check(state.ptr()))
+			throw std::invalid_argument("Failed to unpickle, unexpected type!");
+		std::stringstream ss( std::string( PyBytes_AS_STRING(state.ptr()), PyBytes_Size(state.ptr()) ) );
+		int nobj = 0;
+		ss.read( (char*)&nobj, sizeof(nobj) );
+		obj.resize( nobj );
+		for( int i=0; i<nobj; i++ ) {
+			obj[i] = std::make_shared<OBJ>();
+			obj[i]->load( ss );
+		}
 	}
 };
 

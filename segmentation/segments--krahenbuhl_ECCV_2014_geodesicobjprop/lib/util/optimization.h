@@ -67,3 +67,14 @@ public:
 	VectorXf minimize( const EnergyFunction & f, float & e, int verbose=0 ) const;
 	VectorXf minimize( const EnergyFunction & f, int verbose=0 ) const;
 };
+class SGD {
+protected:
+	float alpha_;
+	int n_iter_, mb_size_;
+public:
+	SGD( float alpha=1e-3, int n_iter=100, int mini_batch_size=10 );
+	
+	VectorXf minimize( const EnergyFunction & f, float & e, int verbose=0 ) const;
+	VectorXf minimize( const EnergyFunction & f, int verbose=0 ) const;
+};
+

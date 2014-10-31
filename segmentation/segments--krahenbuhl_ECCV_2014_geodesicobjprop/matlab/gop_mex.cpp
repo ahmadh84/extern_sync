@@ -27,6 +27,8 @@
 #include "mex.h"
 #include <string>
 #include <map>
+#include <memory>
+#include <sstream>
 #include "contour/directedsobel.h"
 #include "contour/sketchtokens.h"
 #include "contour/structuredforest.h"
@@ -44,15 +46,15 @@ template<typename T> class Handle
 {
     uint32_t sig_;
     std::string name_;
-    T * ptr_;
+    std::shared_ptr<T> ptr_;
 public:
-    Handle(T *ptr) : ptr_(ptr), name_(typeid(T).name()) { sig_ = CLASS_HANDLE_SIGNATURE; }
-    ~Handle() { sig_ = 0; delete ptr_; }
+    Handle(std::shared_ptr<T> ptr) : ptr_(ptr), name_(typeid(T).name()) { sig_ = CLASS_HANDLE_SIGNATURE; }
+    ~Handle() { sig_ = 0; ptr_.reset(); }
     bool isValid() { return sig_ == CLASS_HANDLE_SIGNATURE && name_ == typeid(T).name(); }
-    operator T*() { return ptr_; }
+    operator std::shared_ptr<T>() { return ptr_; }
 };
 
-template<typename T> inline mxArray * ptr2Mat(T *ptr)
+template<typename T> inline mxArray * ptr2Mat(std::shared_ptr<T> ptr)
 {
     mexLock();
     mxArray *out = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
@@ -69,7 +71,7 @@ template<typename T> inline Handle<T> * mat2HandlePtr(const mxArray *in)
         mexErrMsgTxt("Handle not valid.");
     return ptr;
 }
-template<typename T> inline T * mat2Ptr(const mxArray *in)
+template<typename T> inline std::shared_ptr<T> mat2Ptr(const mxArray *in)
 {
     return *mat2HandlePtr<T>(in);
 }
@@ -119,7 +121,7 @@ static std::shared_ptr<BoundaryDetector> detectorFromString( const std::string &
         return std::make_shared<DirectedSobel>();
     }
 }
-static std::shared_ptr<BoundaryDetector> detector = detectorFromString("MultiScaleStructuredForest(\"../data/sf.dat\")");
+static std::shared_ptr<BoundaryDetector> detector;
 static void setDetector( MEX_ARGS ) {
     if( nrhs != 1 ) {
         mexErrMsgTxt( "Expected a single string argument" );
@@ -127,8 +129,20 @@ static void setDetector( MEX_ARGS ) {
     }
     detector = detectorFromString( toString( prhs[0] ) );
 }
+static void newImageOverSegmentationEmpty( MEX_ARGS ) {
+    if( nlhs != 1 ) {
+        mexErrMsgTxt("newImageOverSegmentation expected one return argument");
+        return;
+    }
+    if( nrhs > 0 ) {
+        mexErrMsgTxt( "Expected no arguments" );
+        return ;
+    }
+    // Create the ImageOverSegmentation
+    plhs[0] = ptr2Mat( std::make_shared<ImageOverSegmentation>() );
+}
 static void newImageOverSegmentation( MEX_ARGS ) {
-    if( nlhs == 0 ) {
+    if( nlhs != 1 ) {
         mexErrMsgTxt("newImageOverSegmentation expected one return argument");
         return;
     }
@@ -156,8 +170,39 @@ static void newImageOverSegmentation( MEX_ARGS ) {
     if( nrhs > 1 && mxIsNumeric(prhs[1]) )
         n_spix = mxGetScalar(prhs[1]);
     
-    // Create the OverSegmentation
-    plhs[0] = ptr2Mat( new ImageOverSegmentation( geodesicKMeans( im, *detector, n_spix ) ) );
+    if( nrhs > 3 ) {
+        RMatrixXf bnd[2];
+        for( int i=2; i<4; i++ ) {
+            const mwSize * dims2 = mxGetDimensions(prhs[i]);
+            if( mxGetNumberOfDimensions(prhs[i])!=2 || !mxIsSingle(prhs[i]) || dims2[0]!=dims[0] || dims2[1]!=dims[1] )
+                mexErrMsgTxt( "Expected arguments: Image:HxWx3 uint8-array N_SPIX:int ThickBoundryMap:HxW single-array ThinBoundryMap:HxW single-array" );
+            float * pBnd = (float *)mxGetData(prhs[i]);
+			bnd[i-2] = MatrixXf::Map( pBnd, H, W );
+        }
+        plhs[0] = ptr2Mat( geodesicKMeans( im, bnd[0], bnd[1], n_spix ) );
+    }
+    else {
+        if( !detector )
+            detector = detectorFromString("MultiScaleStructuredForest(\"../data/sf.dat\")");
+        // Create the OverSegmentation
+        plhs[0] = ptr2Mat( geodesicKMeans( im, *detector, n_spix ) );
+    }
+}
+static void ImageOverSegmentation_boundaryMap( MEX_ARGS ) {
+    if( nrhs != 1 ) {
+        mexErrMsgTxt( "Expected a ImageOverSegmentation" );
+        return ;
+    }
+    if( nlhs != 1 ) {
+        mexErrMsgTxt( "Expected a single return argument" );
+        return ;
+    }
+    std::shared_ptr<ImageOverSegmentation> os = mat2Ptr<ImageOverSegmentation>( prhs[0] );
+    RMatrixXf s = os->boundaryMap();
+    // Create and write the resulting segmentation
+    mwSize dims[2] = {(mwSize)s.rows(), (mwSize)s.cols()};
+    plhs[0] = mxCreateNumericArray( 2, dims, mxSINGLE_CLASS, mxREAL );
+    MatrixXf::Map( (float*)mxGetData(plhs[0]), s.rows(), s.cols() ) = s;
 }
 static void ImageOverSegmentation_s( MEX_ARGS ) {
     if( nrhs != 1 ) {
@@ -168,12 +213,48 @@ static void ImageOverSegmentation_s( MEX_ARGS ) {
         mexErrMsgTxt( "Expected a single return argument" );
         return ;
     }
-    ImageOverSegmentation * os = mat2Ptr<ImageOverSegmentation>( prhs[0] );
+    std::shared_ptr<ImageOverSegmentation> os = mat2Ptr<ImageOverSegmentation>( prhs[0] );
     RMatrixXs s = os->s();
     // Create and write the resulting segmentation
     mwSize dims[2] = {(mwSize)s.rows(), (mwSize)s.cols()};
     plhs[0] = mxCreateNumericArray( 2, dims, mxINT16_CLASS, mxREAL );
     MatrixXs::Map( (short*)mxGetData(plhs[0]), s.rows(), s.cols() ) = s;
+}
+static void ImageOverSegmentation_serialize( MEX_ARGS ) {
+    if( nrhs != 1 ) {
+        mexErrMsgTxt( "Expected a ImageOverSegmentation" );
+        return ;
+    }
+    if( nlhs != 1 ) {
+        mexErrMsgTxt( "Expected a single return argument" );
+        return ;
+    }
+    std::shared_ptr<ImageOverSegmentation> os = mat2Ptr<ImageOverSegmentation>( prhs[0] );
+	// Save to a string stream
+	std::stringstream ss;
+	os->save( ss );
+	std::string data = ss.str();
+	// And then copy it to a matlab array
+	mwSize dims[1] = {data.size()};
+	plhs[0] = mxCreateNumericArray( 1, dims, mxUINT8_CLASS, mxREAL );
+	memcpy( mxGetData(plhs[0]), data.c_str(), data.size() );
+}
+static void ImageOverSegmentation_unserialize( MEX_ARGS ) {
+    if( nrhs != 2 ) {
+        mexErrMsgTxt( "Expected a ImageOverSegmentation and a buffer" );
+        return ;
+    }
+    if( nlhs > 0 ) {
+        mexErrMsgTxt( "Expected no return argument" );
+        return ;
+    }
+    if( !mxIsUint8(prhs[1]) ) {
+        mexErrMsgTxt( "Can only unserialize an 8-bit unsigned int array" );
+        return ;
+    }
+    std::shared_ptr<ImageOverSegmentation> os = mat2Ptr<ImageOverSegmentation>( prhs[0] );
+    std::stringstream ss( std::string( (char*) mxGetData(prhs[1]), mxGetM(prhs[1]) ) );
+    os->load( ss );
 }
 static void ImageOverSegmentation_maskToBox( MEX_ARGS ) {
     if( nrhs != 2 || !mxIsLogical(prhs[1]) ) {
@@ -184,7 +265,7 @@ static void ImageOverSegmentation_maskToBox( MEX_ARGS ) {
         mexErrMsgTxt( "Expected a single return argument" );
         return ;
     }
-    ImageOverSegmentation * os = mat2Ptr<ImageOverSegmentation>( prhs[0] );
+    std::shared_ptr<ImageOverSegmentation> os = mat2Ptr<ImageOverSegmentation>( prhs[0] );
     RMatrixXi r = os->maskToBox( MatrixXb::Map( (mxLogical*)mxGetData(prhs[1]), mxGetM(prhs[1]), mxGetN(prhs[1]) ) );
     // Create and write the resulting segmentation
     mwSize dims[2] = {(mwSize)r.rows(), (mwSize)r.cols()};
@@ -220,14 +301,14 @@ std::shared_ptr<UnaryFactory> createUnaryFromString( const std::string & s ) {
         return backgroundUnary( types );
     }
     else if( unary_name == "binaryLearnedUnary" ) {
-		p = args.find('"');
-		std::string fn = args.substr(p+1, args.rfind('"')-p-1 );
-		try {
-			return binaryLearnedUnary( fn );
-		}
-		catch (...) {
-			mexWarnMsgTxt(("Unary term '"+s+"' not found!").c_str());
-		}
+        p = args.find('"');
+        std::string fn = args.substr(p+1, args.rfind('"')-p-1 );
+        try {
+            return binaryLearnedUnary( fn );
+        }
+        catch (...) {
+            mexWarnMsgTxt(("Unary term '"+s+"' not found!").c_str());
+        }
     }
     return zeroUnary();
 }
@@ -291,7 +372,7 @@ static void newProposal( MEX_ARGS ) {
             mexErrMsgTxt(("Setting '"+c+"' not found").c_str());
         }
     }
-    plhs[0] = ptr2Mat( new Proposal( prop_settings ) );
+    plhs[0] = ptr2Mat( std::make_shared<Proposal>( prop_settings ) );
 }
 static void Proposal_propose( MEX_ARGS ) {
     if( nrhs != 2 ) {
@@ -302,8 +383,8 @@ static void Proposal_propose( MEX_ARGS ) {
         mexErrMsgTxt("Expected a single output argument");
         return;
     }
-    Proposal * p = mat2Ptr<Proposal>( prhs[0] );
-    ImageOverSegmentation * os = mat2Ptr<ImageOverSegmentation>( prhs[1] );
+    std::shared_ptr<Proposal> p = mat2Ptr<Proposal>( prhs[0] );
+    std::shared_ptr<ImageOverSegmentation> os = mat2Ptr<ImageOverSegmentation>( prhs[1] );
     
     RMatrixXb r = p->propose( *os );
     
@@ -326,8 +407,12 @@ typedef std::pair<std::string,MatlabFunction> C;
 C command_list[] = {
     A( setDetector )
     A( newImageOverSegmentation )
+    A( newImageOverSegmentationEmpty )
     A( ImageOverSegmentation_s )
+    A( ImageOverSegmentation_boundaryMap )
     A( ImageOverSegmentation_maskToBox )
+    A( ImageOverSegmentation_serialize )
+    A( ImageOverSegmentation_unserialize )
     A( freeImageOverSegmentation )
     A( newProposal )
     A( Proposal_propose )
@@ -346,7 +431,7 @@ void mexFunction( MEX_ARGS ) {
     
     // Execute the command
     if (commands.find( c ) == commands.end()) {
-        mexErrMsgTxt("API command not recognized");
+        mexErrMsgTxt( (std::string("API command not recognized '")+c+"'").c_str() );
         return;
     }
     commands[c](nlhs, plhs, nrhs-1, prhs+1);

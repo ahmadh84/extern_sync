@@ -33,7 +33,59 @@ using namespace Eigen;
 
 const float RECALL_OVERLAP = 0.5;
 
-SparseMatrix<float> overlap( const short * gt_seg, int W, int H, int D, const RMatrixXs &over_seg, const RMatrixXb &segments, VectorXf * area = NULL ) {
+VectorXf bestOverlap( const std::vector<Polygons> & regions, const RMatrixXs &over_seg, const RMatrixXb &segments, VectorXf * area = NULL ) {
+	const int N_sp = over_seg.maxCoeff()+1, N_gt = regions.size();
+	
+	// Compute the sparse proposal matrix
+	SparseMatrix<float> props( segments.rows(), segments.cols() );
+	std::vector< Triplet<float> > t;
+	for( int j=0; j<props.rows(); j++ )
+		for( int i=0; i<props.cols(); i++ ) 
+			if( segments(j,i) )
+				t.push_back( Triplet<float>(j,i,1) );
+	props.setFromTriplets( t.begin(), t.end() );
+	
+	// Compute the superpixel areas
+	VectorXf sp_area = VectorXf::Zero( N_sp );
+	for( int j=0; j<over_seg.rows(); j++ )
+		for( int i=0; i<over_seg.cols(); i++ )
+			sp_area[ over_seg(j,i) ]++;
+		
+	if(area)
+		*area = VectorXf::Zero( N_gt );
+	VectorXf r( N_gt );
+	// Compute the best overlap with each GT object
+	for( int i=0; i<N_gt; i++ ) {
+		float gt_area = 0;
+		VectorXf cur_sp_area = sp_area;
+		SparseVector<float> intersection( N_sp );
+		rasterize( [&](int x,int y,RasterType t){
+			if (0<=x && x<over_seg.cols() && 0<=y && y<over_seg.rows()) {
+				const int s = over_seg(y,x);
+				if( t==INSIDE ){
+					gt_area += 1;
+					intersection.coeffRef( s ) += 1;
+				}
+				// Ignore boundary pixels
+				else if (t==OUTSIDE_BOUNDARY)
+					cur_sp_area[s]-=1;
+			}
+		}, regions[i] );
+		VectorXf prop_area = props * cur_sp_area;
+		SparseVector<float> prop_intersection = props * intersection;
+		
+		float bo = 0;
+		for( SparseVector<float>::InnerIterator it(prop_intersection); it; ++it )
+			bo = std::max( bo, it.value() / (gt_area + prop_area[it.row()] - it.value()) );
+		
+		r[i] = bo;
+		if(area)
+			(*area)[i] = gt_area;
+	}
+	return r;
+}
+
+VectorXf bestOverlap( const short * gt_seg, int W, int H, int D, const RMatrixXs &over_seg, const RMatrixXb &segments, VectorXf * area = NULL ) {
 	if( W != over_seg.cols() || H != over_seg.rows() )
 		throw std::invalid_argument("Ground truth and over segmentation shape does not match!");
 	Map<const VectorXs> sp( (const short*)over_seg.data(), W*H );
@@ -76,54 +128,36 @@ SparseMatrix<float> overlap( const short * gt_seg, int W, int H, int D, const RM
 	VectorXf seg_area = props * sp_area;
 	SparseMatrix<float> seg_intersection = intersection * props.transpose();
 	
+	VectorXf r = VectorXf::Zero( N_gt );
 	for (int k=0; k<seg_intersection.outerSize(); ++k)
-		for (SparseMatrix<float>::InnerIterator it(seg_intersection,k); it; ++it){
-			it.valueRef() /= seg_area[ it.col() ] + gt_area[ it.row() ] - it.value();
-		}
+		for (SparseMatrix<float>::InnerIterator it(seg_intersection,k); it; ++it)
+			r[it.row()] = std::max( r[it.row()], it.value() / ( seg_area[ it.col() ] + gt_area[ it.row() ] - it.value() ) );
 	if( area )
 		*area = gt_area;
-	return seg_intersection;
-}
-SparseMatrix<float> overlap( const np::ndarray &gt_seg, const np::ndarray &over_seg, const np::ndarray &segments, VectorXf * area = NULL ) {
-	checkArray( gt_seg, short, 2, 3, true );
-	const int W = gt_seg.shape(gt_seg.get_nd()-1), H = gt_seg.shape(gt_seg.get_nd()-2), D = gt_seg.get_nd()<3?1:gt_seg.shape(0);
-	return overlap( (short*)gt_seg.get_data(), W, H, D, mapMatrixX<short>( over_seg ), mapMatrixX<bool>( segments ), area );
-}
-VectorXf cwMax( const SparseMatrix<float> & sm ) {
-	VectorXf r( sm.rows() );
-	r.setZero();
-	for (int k=0; k<sm.outerSize(); ++k)
-		for (SparseMatrix<float>::InnerIterator it(sm,k); it; ++it)
-			r[it.row()] = std::max( r[it.row()], it.value() );
 	return r;
-}
-VectorXf rwMax( const SparseMatrix<float> & sm ) {
-	VectorXf r( sm.cols() );
-	r.setZero();
-	for (int k=0; k<sm.outerSize(); ++k)
-		for (SparseMatrix<float>::InnerIterator it(sm,k); it; ++it)
-			r[it.col()] = std::max( r[it.col()], it.value() );
-	return r;
-}
-float covering( const np::ndarray &gt_seg, const np::ndarray &over_seg, const np::ndarray &props ) {
-	VectorXf area;
-	SparseMatrix<float> ol = overlap( gt_seg, over_seg, props, &area );
-	return cwMax(area.asDiagonal() * ol).array().sum() / area.array().sum();
-}
-float segCovering( const np::ndarray &gt_seg, const np::ndarray &over_seg, const np::ndarray &props ) {
-	VectorXf area;
-	SparseMatrix<float> ol = overlap( gt_seg, over_seg, props, &area );
-	return rwMax(area.asDiagonal() * ol).array().sum() / area.array().sum();
-}
-np::ndarray coveringVec( const np::ndarray &gt_seg, const np::ndarray &over_seg, const np::ndarray &props ) {
-	SparseMatrix<float> ol = overlap( gt_seg, over_seg, props );
-	return toNumpy( cwMax(ol) );
-}
-np::ndarray segCoveringVec( const np::ndarray &gt_seg, const np::ndarray &over_seg, const np::ndarray &props ) {
-	SparseMatrix<float> ol = overlap( gt_seg, over_seg, props );
-	return toNumpy( rwMax(ol) );
 }
 
+ProposalEvaluation::ProposalEvaluation(const std::vector<Polygons> & regions, const std::vector<RMatrixXs> & over_seg, const std::vector<RMatrixXb> & props) {
+	if( over_seg.size() != props.size() )
+		throw std::invalid_argument("Different number of over segmentations and proposals!");
+	if( over_seg.size() < 1 )
+		throw std::invalid_argument("At least one proposal required!");
+	
+	VectorXf area, bo;
+	pool_size_ = 0;
+	for( int k=0; k <over_seg.size(); k++ ) {
+		VectorXf o = bestOverlap( regions, over_seg[k], props[k], &area );
+		if( k )
+			bo = bo.array().max( o.array() );
+		else
+			bo = o;
+		pool_size_ += props[k].rows();
+	}
+	bo_ = bo;
+	area_ = area;
+}
+ProposalEvaluation::ProposalEvaluation(const std::vector<Polygons> & regions, const RMatrixXs &over_seg, const RMatrixXb &props ):ProposalEvaluation( regions, std::vector<RMatrixXs>(1,over_seg), std::vector<RMatrixXb>( 1, props ) ) {
+}
 ProposalEvaluation::ProposalEvaluation(const short int *gt_seg, int W, int H, int D, const std::vector<RMatrixXs> & over_seg, const std::vector<RMatrixXb> & props) {
 	if( over_seg.size() != props.size() )
 		throw std::invalid_argument("Different number of over segmentations and proposals!");
@@ -133,11 +167,11 @@ ProposalEvaluation::ProposalEvaluation(const short int *gt_seg, int W, int H, in
 	VectorXf area, bo;
 	pool_size_ = 0;
 	for( int k=0; k <over_seg.size(); k++ ) {
-		SparseMatrix<float> o = overlap( gt_seg, W, H, D, over_seg[k], props[k], &area );
+		VectorXf o = bestOverlap( gt_seg, W, H, D, over_seg[k], props[k], &area );
 		if( k )
-			bo = bo.array().max( cwMax( o ).array() );
+			bo = bo.array().max( o.array() );
 		else
-			bo = cwMax( o );
+			bo = o;
 		pool_size_ += props[k].rows();
 	}
 	bo_ = bo;

@@ -25,13 +25,15 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "image.h"
+#ifndef NO_IMREAD
 #define cimg_display 0
 #define cimg_use_jpeg
 #define cimg_use_png
 #define PNG_SKIP_SETJMP_CHECK
 #include "CImg.h"
-#include <cstdio>
 using namespace cimg_library;
+#endif
+#include <cstdio>
 
 static bool exists( const std::string &file_name ) {
 	FILE* fp = fopen( file_name.c_str(), "r" );
@@ -40,6 +42,7 @@ static bool exists( const std::string &file_name ) {
 	fclose( fp );
 	return true;
 }
+#ifndef NO_IMREAD
 Image8u imread( const std::string &file_name ) {
 	if(!exists( file_name ))
 		return Image8u();
@@ -52,6 +55,18 @@ Image8u imread( const std::string &file_name ) {
 				r[l] = im(i,j,0,k);
 	return r;
 }
+std::shared_ptr<Image8u> imreadShared( const std::string &file_name ) {
+	if(!exists( file_name ))
+		return std::shared_ptr<Image8u>();
+	CImg<unsigned char> im( file_name.c_str() );
+	int W = im.width(), H = im.height(), C = im.spectrum();
+	std::shared_ptr<Image8u> r = std::make_shared<Image8u>(W,H,C);
+	for( int j=0,l=0; j<H; j++ )
+		for( int i=0; i<W; i++ )
+			for( int k=0; k<C; k++,l++ )
+				(*r)[l] = im(i,j,0,k);
+	return r;
+}
 
 void imwrite( const std::string & file_name, const Image8u & im ) {
 	CImg<unsigned char> r( im.W(), im.H(), 1, im.C() );
@@ -61,3 +76,4 @@ void imwrite( const std::string & file_name, const Image8u & im ) {
 				r(i,j,0,k) = im[l];
 	r.save( file_name.c_str() );
 }
+#endif

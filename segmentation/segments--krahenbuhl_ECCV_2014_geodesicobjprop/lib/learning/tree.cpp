@@ -182,7 +182,9 @@ void BaseTree::fitMT( const Features &f, const VectorXi & ids, const RMatrixXf &
 			TOC("fid");
 			
 			// Evaluate those features and find the best split
-			for( int fi: fids ) {
+// 			for( int fi: fids )
+			for( int fii=0; fii<fids.size(); fii++ ) {
+				const int & fi = fids[fii];
 				// Extract the feature
 				VectorXf fv( N );
 				for( int j=0; j<N; j++ )

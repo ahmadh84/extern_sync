@@ -1,3 +1,4 @@
+# -*- encoding: utf-8
 """
     Copyright (c) 2014, Philipp Krähenbühl
     All rights reserved.
@@ -24,9 +25,7 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from sys import stdout
-
-GPB_PATH = '/fastdata/VOC2012/gPb/%s.mat'
+# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8from sys import stdout
 
 class ProgressPrint:
 	def __init__( self, message, start, end=None, show_mem=False ):
@@ -89,13 +88,80 @@ def fastSampleWithoutRep( a, size, tile=True ):
 		return US
 	return US[:size]
 
+def loadCOCOAndOverSeg( im_set="test", detector="sf", N_SPIX=1000, fold=0 ):
+	from pickle import dumps,loads
+	try:
+		import lz4, pickle
+		decompress = lambda s: pickle.loads( lz4.decompress( s ) )
+		compress = lambda o: lz4.compressHC( pickle.dumps( o ) )
+	except:
+		compress = lambda x: x
+		decompress = lambda x: x
+	from gop import contour,dataset,segmentation
+	FILE_NAME = '/tmp/coco_%s_%s_%d_%d.dat'%(im_set,detector,N_SPIX,fold)
+	try:
+		with open(FILE_NAME,'rb') as f:
+			over_segs,segmentations = loads( f.read() )
+			f.close()
+			over_seg = segmentation.ImageOverSegmentationVec()
+			for i in over_segs:
+				over_seg.append( decompress(i) )
+			return over_seg,[decompress(i) for i in segmentations],[]
+			#return over_segs,segmentations,[]
+	except FileNotFoundError:
+		pass
+	
+	# Load the dataset
+	data = dataset.loadCOCO2014( im_set=="train",im_set=="valid", fold)
+	
+	# COCO has some pretty gray scale images (WTF!!!)
+	images = [e['image'] if e['image'].C==3 else e['image'].tileC(3)  for e in data]
+	try:
+		segmentations = [e['segmentation'] for e in data]
+	except:
+		segmentations = []
+	
+	# Do the over-segmentation
+	if detector=='sf':
+		detector = contour.StructuredForest()
+		detector.load( '../data/sf.dat' )
+	elif detector == "mssf":
+		detector = contour.MultiScaleStructuredForest()
+		detector.load( "../data/sf.dat" )
+	elif detector=='st':
+		detector = contour.SketchTokens()
+		detector.load( '../data/st_full_c.dat' )
+	else:
+		detector = contour.DirectedSobel()
+	
+	if detector != None:
+		over_segs = segmentation.generateGeodesicKMeans( detector, images, N_SPIX )
+	with open(FILE_NAME,'wb') as f:
+		#f.write( dumps( (over_segs,segmentations) ) )
+		f.write( dumps( ([compress(i) for i in over_segs],[compress(i) for i in segmentations]) ) )
+		f.close()
+	
+	return over_segs,segmentations,[]
+
 def loadVOCAndOverSeg( im_set="test", detector="sf", N_SPIX=1000, EVAL_DIFFICULT=False, year="2012" ):
-	from pickle import dump,load
+	from pickle import dumps,loads
+	try:
+		import lz4, pickle
+		decompress = lambda s: pickle.loads( lz4.decompress( s ) )
+		compress = lambda o: lz4.compressHC( pickle.dumps( o ) )
+	except:
+		compress = lambda x: x
+		decompress = lambda x: x
 	from gop import contour,dataset,segmentation
 	FILE_NAME = '/tmp/%s_%s_%d_%d_%s.dat'%(im_set,detector,N_SPIX,EVAL_DIFFICULT,year)
 	try:
 		with open(FILE_NAME,'rb') as f:
-			return load( f )
+			over_segs,segmentations,boxes = loads( f.read() )
+			f.close()
+			over_seg = segmentation.ImageOverSegmentationVec()
+			for i in over_segs:
+				over_seg.append( decompress(i) )
+			return over_seg,[decompress(i) for i in segmentations],[decompress(i) for i in boxes]
 	except FileNotFoundError:
 		pass
 	
@@ -119,24 +185,17 @@ def loadVOCAndOverSeg( im_set="test", detector="sf", N_SPIX=1000, EVAL_DIFFICULT
 	elif detector=='st':
 		detector = contour.SketchTokens()
 		detector.load( '../data/st_full_c.dat' )
-	elif detector.lower()=='gpb':
-		detector = None
-		over_segs = []
-		for e in data:
-			import scipy.io as spio
-			print( GPB_PATH%e['name'] )
-			M = spio.loadmat( GPB_PATH%e['name'] )
-			over_segs.append( segmentation.geodesicKMeans( e['image'], M['gPb_thin'], N_SPIX ) )
 	else:
 		detector = contour.DirectedSobel()
 	
 	if detector != None:
 		over_segs = segmentation.generateGeodesicKMeans( detector, images, N_SPIX )
-	try:
-		with open(FILE_NAME,'wb') as f:
-			dump( (over_segs,segmentations,boxes), f )
-	except:
-		pass
+	#try:
+	with open(FILE_NAME,'wb') as f:
+		f.write( dumps( ([compress(i) for i in over_segs],[compress(i) for i in segmentations],[compress(i) for i in boxes]) ) )
+		f.close()
+	#except FileNotFoundError:
+		#pass
 	
 	return over_segs,segmentations,boxes
 
@@ -155,17 +214,20 @@ def fastSampleWithoutRep( a, size, tile=True ):
 		return US
 	return US[:size]
 
-def setupBaseline(N_S,N_T,max_iou=0.85):	
+def setupBaseline(N_S,N_T,max_iou=0.85,SEED_PROPOSAL=False):
 	from gop import proposals
 	prop_settings = proposals.ProposalSettings()
 	prop_settings.max_iou = max_iou
 	del prop_settings.unaries[:]
 	
 	prop_settings.unaries.append( proposals.UnarySettings( N_S, N_T, proposals.seedUnary(), [0,15] ) )
+	if SEED_PROPOSAL: # Seed proposals
+		prop_settings.unaries.append( proposals.UnarySettings( N_S, 1, proposals.seedUnary(), [], 0, 0 ) )
+	# Background only proposals
 	prop_settings.unaries.append( proposals.UnarySettings( 0, N_T, proposals.seedUnary(), list(range(16)), 0.1, 1  ) )
 	return prop_settings
 
-def setupLearned(N_S,N_T,max_iou=0.85,N_MASKS=3):	
+def setupLearned(N_S,N_T,max_iou=0.85,N_MASKS=3,SEED_PROPOSAL=False):	
 	from gop import proposals
 	prop_settings = proposals.ProposalSettings()
 	prop_settings.max_iou = max_iou
@@ -180,5 +242,8 @@ def setupLearned(N_S,N_T,max_iou=0.85,N_MASKS=3):
 		fg = proposals.binaryLearnedUnary( "../data/masks_final_%d_fg.dat"%i )
 		bg = proposals.binaryLearnedUnary( "../data/masks_final_%d_bg.dat"%i )
 		prop_settings.unaries.append( proposals.UnarySettings( N_S, N_T, fg, bg ) )
+	if SEED_PROPOSAL: # Seed proposals
+		prop_settings.unaries.append( proposals.UnarySettings( N_S, 1, proposals.seedUnary(), [], 0, 0 ) )
+	# Background only proposals
 	prop_settings.unaries.append( proposals.UnarySettings( 0, N_T, proposals.seedUnary(), list(range(16)), 0.1, 1  ) )
 	return prop_settings

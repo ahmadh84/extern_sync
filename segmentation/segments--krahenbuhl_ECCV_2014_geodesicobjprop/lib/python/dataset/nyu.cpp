@@ -125,10 +125,10 @@ static dict loadEntry( const std::string & name, const std::vector<short> & clas
 	r["segmentation"] = olbl;
 	
 	sprintf( buf, NYU_IMAGES.c_str(), name.c_str() );
-	Image8u im = imread( buf );
-	if( im.empty() )
+	std::shared_ptr<Image8u> im = imreadShared( buf );
+	if( !im || im->empty() )
 		return dict();
-	r["image"] = crop( im, x, y, W, H );
+	r["image"] = crop( *im, x, y, W, H );
 	
 	sprintf( buf, NYU_DEPTHS.c_str(), name.c_str() );
 	np::ndarray d = toNumpy( RMatrixXf(readPNG16( buf ).cast<float>().array() / DEPTH_SCALE) );

@@ -26,11 +26,12 @@
 */
 #include "dataset/apng.h"
 #include "dataset/berkeley.h"
+#include "dataset/coco.h"
 #include "dataset/covering.h"
 #include "dataset/evaluation.h"
 #include "dataset/image.h"
-#include "dataset/voc.h"
 #include "dataset/nyu.h"
+#include "dataset/voc.h"
 #include "dataset/weizmann.h"
 #include "gop.h"
 #include "util.h"
@@ -38,8 +39,8 @@
 #include <proposals/proposal.h>
 
 
-tuple proposeAndEvaluate( const list & ios, const list & gt_segs, const list & gt_boxes, const Proposal & prop ) {
-	const int N = len(ios);
+tuple proposeAndEvaluate( const std::vector< std::shared_ptr<ImageOverSegmentation> > & ios, const list & gt_segs, const list & gt_boxes, const Proposal & prop ) {
+	const int N = ios.size();
 	const bool has_segs = len(gt_segs)>0, has_box = len(gt_boxes)>0;
 	
 	if( has_segs && len(gt_segs)!=N )
@@ -47,19 +48,22 @@ tuple proposeAndEvaluate( const list & ios, const list & gt_segs, const list & g
 	if( has_box && len(gt_boxes)!=N )
 		throw std::invalid_argument("Same number of oversegs and ground truth gt_boxes required!");
 	
-	// Load the over segmentations
-	std::vector< ImageOverSegmentation * > c_ios = to_vector<ImageOverSegmentation*>( ios );
-	
 	// Convert the Segment Data
 	std::vector<const short*> gt_data(len(gt_segs));
 	std::vector<int> W(len(gt_segs)),H(len(gt_segs)),D(len(gt_segs));
+	std::vector< std::vector<Polygons> > regions(len(gt_segs));
+	bool has_regions = len( gt_segs )>0 && extract< std::vector<Polygons> >( gt_segs[0] ).check();
 	for( int i=0; i<len(gt_segs); i++ ) {
-		np::ndarray gt_seg = extract<np::ndarray>( gt_segs[i] );
-		checkArray( gt_seg, short, 2, 3, true );
-		W[i] = gt_seg.shape(gt_seg.get_nd()-1);
-		H[i] = gt_seg.shape(gt_seg.get_nd()-2);
-		D[i] = gt_seg.get_nd()<3?1:gt_seg.shape(0);
-		gt_data[i] = (const short*)gt_seg.get_data();
+		if( has_regions )
+			regions[i] = extract< std::vector<Polygons> >( gt_segs[i] );
+		else {
+			np::ndarray gt_seg = extract<np::ndarray>( gt_segs[i] );
+			checkArray( gt_seg, short, 2, 3, true );
+			W[i] = gt_seg.shape(gt_seg.get_nd()-1);
+			H[i] = gt_seg.shape(gt_seg.get_nd()-2);
+			D[i] = gt_seg.get_nd()<3?1:gt_seg.shape(0);
+			gt_data[i] = (const short*)gt_seg.get_data();
+		}
 	}
 	// Convert the Bounding Box Data
 	std::vector<RMatrixXi> box_data(len(gt_boxes));
@@ -74,9 +78,17 @@ tuple proposeAndEvaluate( const list & ios, const list & gt_segs, const list & g
 	int n=0, box_n=0;
 #pragma omp parallel for
 	for( int i=0; i<N; i++ ) {
-		RMatrixXb props = prop.propose( *c_ios[i] );
-		if( has_segs ) {
-			ProposalEvaluation peval( gt_data[i], W[i], H[i], D[i], c_ios[i]->s(), props );
+		RMatrixXb props = prop.propose( *ios[i] );
+		if( has_segs && has_regions ) {
+			ProposalEvaluation peval( regions[i], ios[i]->s(), props );
+			bo[i] = peval.bo_;
+			area[i] = peval.area_;
+			pool_size[i] = peval.pool_size_;
+#pragma omp atomic
+			n += peval.bo_.size();
+		}
+		else if( has_segs ) {
+			ProposalEvaluation peval( gt_data[i], W[i], H[i], D[i], ios[i]->s(), props );
 			bo[i] = peval.bo_;
 			area[i] = peval.area_;
 			pool_size[i] = peval.pool_size_;
@@ -84,7 +96,7 @@ tuple proposeAndEvaluate( const list & ios, const list & gt_segs, const list & g
 			n += peval.bo_.size();
 		}
 		if( has_box ) {
-			RMatrixXi boxes = c_ios[i]->maskToBox( props );
+			RMatrixXi boxes = ios[i]->maskToBox( props );
 			ProposalBoxEvaluation beval( box_data[i], boxes );
 			box_bo[i] = beval.bo_;
 			box_pool_size[i] = beval.pool_size_;
@@ -151,12 +163,25 @@ tuple evaluate( const T & s, const T & prop, const np::ndarray & gt_segs, const 
 	}
 	return make_tuple( toNumpy(bo), toNumpy(b_bo), n, box_n );
 }
+template<typename T>
+RMatrixXf evaluate2( const T & s, const T & prop, const std::vector<Polygons> & regions ) {
+	auto ms = mapMatrixXList<short>( s );
+	auto mprop = mapMatrixXList<bool>( prop );
+	
+	RMatrixXf bo = RMatrixXf::Zero( regions.size(), 2 );
+	
+	ProposalEvaluation peval( regions, ms, mprop );
+	bo.col(0) = peval.bo_;
+	bo.col(1) = peval.area_;
+	return bo;
+}
 class EmptyDirs{};
 BOOST_PYTHON_FUNCTION_OVERLOADS( loadWeizmann_overload, loadWeizmann, 2, 3 )
+BOOST_PYTHON_FUNCTION_OVERLOADS( loadGrabcut_overload, loadGrabcut, 2, 3 )
 
 void defineDataset() {
 	ADD_MODULE(dataset);
-	def("imread", imread);
+	def("imread", imreadShared);
 	def("imwrite", imwrite);
 	def("readAPNG", readAPNG);
 	def("writeAPNG", writeAPNG);
@@ -180,21 +205,20 @@ void defineDataset() {
 	def("labelsNYU", labelsNYU);
 	def("labelsNYU04", labelsNYU04);
 	def("labelsNYU40", labelsNYU40);
+	def("loadCOCO2014", loadCOCO2014);
+	def("cocoNFolds", cocoNFolds);
 	def("matchAny", matchAny );
 	def("matchBp", matchBp );
 	def("evalBoundaryBinary", evalBoundaryBinary );
 	def("evalBoundary", evalBoundary );
 	def("evalBoundaryAll", evalBoundaryAll );
 	
-	def("covering",covering);
-	def("segCovering",segCovering);
-	def("coveringVec",coveringVec);
-	def("segCoveringVec",segCoveringVec);
-	
 	def("proposeAndEvaluate",proposeAndEvaluate);
 	
 	def("evaluate",evaluate<list>);
 	def("evaluate",evaluate<np::ndarray>);
+	def("evaluate",evaluate2<list>);
+	def("evaluate",evaluate2<np::ndarray>);
 	
 	class_<EmptyDirs>("dirs")
 	.add_static_property("berkeley",make_getter(berkeley_dir),make_setter(berkeley_dir))

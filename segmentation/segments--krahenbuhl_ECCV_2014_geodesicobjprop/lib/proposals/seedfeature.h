@@ -59,12 +59,14 @@ public:
 };
 
 class SeedFeatureFactory {
-protected:
+public:
 	class Creator;
+protected:
 	std::vector< std::shared_ptr<Creator> > creator_;
 public:
 	// Create an instantiation
 	SeedFeatureVector create( const ImageOverSegmentation & ios ) const;
+	void clear();
 	
 	// Add different features
 	void addPosition();

@@ -1,3 +1,4 @@
+# -*- encoding: utf-8
 """
     Copyright (c) 2014, Philipp Krähenbühl
     All rights reserved.
@@ -24,7 +25,7 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from gop import *
+# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8from gop import *
 import numpy as np
 from util import *
 from train_seed import trainSeed
@@ -39,7 +40,7 @@ N_MASKS = 3
 # Train the seeds
 try:
 	seed = proposals.LearnedSeed()
-	seed.load( '../data/seed_final2.dat' )
+	seed.load( '../data/seed_final.dat' )
 except:
 	print("====== Training seeds ====== ")
 	seed = trainSeed( 200, detector=d )
@@ -62,6 +63,7 @@ except:
 
 # Load the dataset
 over_segs,segmentations,boxes = loadVOCAndOverSeg( "test", detector=d, year="2012" )
+#over_segs,segmentations,boxes = loadCOCOAndOverSeg( "valid", detector='mssf', fold=0 )
 has_box = [len(b)>0 for b in boxes]
 boxes = [np.vstack(b).astype(np.int32) if len(b)>0 else np.zeros((0,4),dtype=np.int32) for b in boxes]
 
@@ -72,13 +74,7 @@ s.append( (160,6,0.85) ) # ~1100 props
 s.append( (180,9,0.9) ) # ~2200 props
 s.append( (200,15,0.9) ) # ~4400 props
 for N_S,N_T,iou in s:
-	prop_settings = setupBaseline( N_S, N_T, iou )
-	prop_settings.foreground_seeds = seed
-	del prop_settings.unaries[:]
-	for u in masks:
-		prop_settings.unaries.append( proposals.UnarySettings( N_S, N_T, u[0], u[1] ) )
-	prop_settings.unaries.append( proposals.UnarySettings( 0, N_T, proposals.seedUnary(), list(range(16)), 0.1, 1  ) )
-
+	prop_settings = setupLearned( N_S, N_T, iou, SEED_PROPOSAL=True )
 	bo,b_bo,pool_s,box_pool_s = dataset.proposeAndEvaluate( over_segs, segmentations, boxes, proposals.Proposal( prop_settings ) )
 	if LATEX_OUTPUT:
 		print( "Learned GOP ($%d$,$%d$) & %d & %0.3f & %0.3f & %0.3f & %0.3f &  \\\\"%(N_S,N_T,np.mean(pool_s),np.mean(bo[:,0]),np.sum(bo[:,0]*bo[:,1])/np.sum(bo[:,1]), np.mean(bo[:,0]>=0.5), np.mean(bo[:,0]>=0.7) ) )

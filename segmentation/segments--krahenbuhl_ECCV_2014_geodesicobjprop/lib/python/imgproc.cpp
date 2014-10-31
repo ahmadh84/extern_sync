@@ -222,6 +222,10 @@ struct Image_indexing_suite: def_visitor<Image_indexing_suite<IM> > {
 		.def("__init__",make_constructor(&Image_indexing_suite::init1))
 		.def("__init__",make_constructor(&Image_indexing_suite::init2))
 		.def("__init__",make_constructor(&Image_indexing_suite::init3))
+		.add_property("W",&IM::W)
+		.add_property("H",&IM::H)
+		.add_property("C",&IM::C)
+		.def("tileC",&IM::tileC)
 		.def_pickle(Image_pickle_suite())
 		.add_property("__array_interface__", &Image_indexing_suite::array_interface);
 	}
@@ -289,10 +293,10 @@ void defineImgProc() {
 	def("imwrite",imwrite);
 	
 	// Image and Image8u
-	class_<Image>("Image")
+	class_<Image,std::shared_ptr<Image> >("Image")
 	.def(Image_indexing_suite<Image>())
 	.def("toImage8u",convertImage<Image,Image8u>);
-	class_<Image8u>("Image8u")
+	class_<Image8u,std::shared_ptr<Image8u> >("Image8u")
 	.def(Image_indexing_suite<Image8u>())
 	.def("toImage",convertImage<Image,Image8u>);
 }

@@ -30,6 +30,7 @@
 #include "imgproc/nms.h"
 #include "imgproc/gradient.h"
 #include "imgproc/resample.h"
+#include <iostream>
 #include <fstream>
 #include <unordered_map>
 #include <cstdio>
@@ -89,7 +90,7 @@ RMatrixXf StructuredForest::filter(const RMatrixXf &detection) const {
 	return filter( detection, -1, -1 );
 }
 void StructuredForest::load(const std::string &fn) {
-	std::ifstream s( fn );
+	std::ifstream s( fn, std::ios::in | std::ios::binary );
 	if(!s.is_open())
 		throw std::invalid_argument( "Could not open file '"+fn+"'!" );
 	forest_.load( s );
@@ -101,7 +102,7 @@ void StructuredForest::load(const std::string &fn) {
 	s.read( (char*)&settings_, sizeof(settings_) );
 }
 void StructuredForest::save(const std::string &fn) const {
-	std::ofstream s( fn );
+	std::ofstream s( fn, std::ios::out | std::ios::binary );
 	forest_.save( s );
 	// Save patch_ids
 	int sz = patch_ids_.size();

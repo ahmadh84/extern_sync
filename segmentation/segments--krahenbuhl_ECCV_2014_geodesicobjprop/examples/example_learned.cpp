@@ -49,21 +49,21 @@ int main( int argc, const char * argv[] ) {
 		Image8u im = imread(argv[i]);
 		
 		// Create an over-segmentation
-		ImageOverSegmentation s = geodesicKMeans( im, detector, 1000 );
-		RMatrixXb p = prop.propose( s );
+		std::shared_ptr<ImageOverSegmentation> s = geodesicKMeans( im, detector, 1000 );
+		RMatrixXb p = prop.propose( *s );
 		printf("Generated %d proposals\n", (int)p.rows() );
 		
 		// If you just want boxes use
-		RMatrixXi boxes = s.maskToBox( p );
+		RMatrixXi boxes = s->maskToBox( p );
 		
 		// To use the proposals use the over segmentation s.s() and p.row(n)
 		// you can get the binary segmentation mask using the following lines
 		int n_prop = 0;
 		
-		RMatrixXb segment( s.s().rows(), s.s().cols() );
-		for( int j=0; j<s.s().rows(); j++ )
-			for( int i=0; i<s.s().cols(); i++ )
-				segment(j,i) = p( n_prop, s.s()(j,i) );
+		RMatrixXb segment( s->s().rows(), s->s().cols() );
+		for( int j=0; j<s->s().rows(); j++ )
+			for( int i=0; i<s->s().cols(); i++ )
+				segment(j,i) = p( n_prop, s->s()(j,i) );
 	}
 
 	return 0;

@@ -25,7 +25,7 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "edgeweight.h"
-#include "util.h"
+#include "geodesics.h"
 #include "segmentation/segmentation.h"
 #include "util/optimization.h"
 #include <iostream>

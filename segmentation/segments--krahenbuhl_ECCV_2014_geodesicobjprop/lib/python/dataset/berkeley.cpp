@@ -25,17 +25,24 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "berkeley.h"
+#ifndef IGNORE_BERKELEY
 #include "apng.h"
 #include "imgproc/image.h"
 #include "matio.h"
 #include <dirent.h>
 #include <fstream>
 #include <sys/stat.h>
-
-#ifdef __APPLE__
-#define MAT_BY_NAME BY_NAME
 #endif
 
+#define XSTR( x ) STR( x )
+#define STR( x ) std::string( #x )
+#ifdef BERKELEY_DIR
+std::string berkeley_dir = XSTR(BERKELEY_DIR);
+#else
+std::string berkeley_dir = "data/berkeley";
+#endif
+
+#ifndef IGNORE_BERKELEY
 static std::vector< std::string > listDir(const std::string &dirname) {
 	std::vector< std::string > r;
 	DIR* dp = opendir( dirname.c_str() );
@@ -47,14 +54,6 @@ static std::vector< std::string > listDir(const std::string &dirname) {
 static int mkdir( const std::string & pathname ){ 
 	return mkdir( pathname.c_str(), 0777 );
 }
-
-#define XSTR( x ) STR( x )
-#define STR( x ) std::string( #x )
-#ifdef BERKELEY_DIR
-std::string berkeley_dir = XSTR(BERKELEY_DIR);
-#else
-std::string berkeley_dir = "data/berkeley";
-#endif
 
 static np::ndarray sgread( const std::string & name ) {
 	np::ndarray r(np::empty(make_tuple(0), np::dtype::get_builtin<unsigned char>()));
@@ -138,8 +137,8 @@ static dict loadEntry( std::string name ) {
 	dict r;
 	for (std::string s: sets) {
 		std::string im_name = s+"/"+name+".jpg";
-		Image8u im = imread( im_dir + "/" + im_name );
-		if( !im.empty() ) {
+		std::shared_ptr<Image8u> im = imreadShared( im_dir + "/" + im_name );
+		if( im && !im->empty() ) {
 			std::string sname = s+"/"+name+".png", bname = s+"/"+name+"_bnd.png", mname = s+"/"+name+".mat";
 			
 			np::ndarray seg = readAPNG( cs_dir + "/" + sname );
@@ -182,14 +181,20 @@ static void loadBSD300( list & r, const std::string & type ) {
 		}
 	}
 }
+#endif
 list loadBSD300( bool train, bool valid, bool test ) {
 	list r;
+#ifndef IGNORE_BERKELEY
 	if( train )
 		loadBSD300( r, "train");
 	if( test )
 		loadBSD300( r, "test");
+#else
+	throw std::invalid_argument("matio needed to load the BSD");
+#endif
 	return r;
 }
+#ifndef IGNORE_BERKELEY
 static void loadBSD500( list & r, const std::string & type, int max_entry=1<<30 ) {
 	std::string sets[] = {"train","val","test"};
 	std::string cs_dir = berkeley_dir+"/cache/";
@@ -213,24 +218,33 @@ static void loadBSD500( list & r, const std::string & type, int max_entry=1<<30 
 			}
 		}
 }
+#endif
 list loadBSD500( bool train, bool valid, bool test ) {
 	list r;
+#ifndef IGNORE_BERKELEY
 	if( train )
 		loadBSD500( r, "train");
 	if( valid )
 		loadBSD500( r, "val");
 	if( test )
 		loadBSD500( r, "test");
+#else
+	throw std::invalid_argument("matio needed to load the BSD");
+#endif
 	return r;
 }
 list loadBSD50( bool train, bool valid, bool test ) {
 	list r;
+#ifndef IGNORE_BERKELEY
 	if( train )
 		loadBSD500( r, (std::string)"train", 20);
 	if( valid )
 		loadBSD500( r, (std::string)"val", 10);
 	if( test )
 		loadBSD500( r, (std::string)"test", 20);
+#else
+	throw std::invalid_argument("matio needed to load the BSD");
+#endif
 	return r;
 }
 

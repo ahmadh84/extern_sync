@@ -24,7 +24,7 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "berkeley.h"
+#include "weizmann.h"
 #include "imgproc/image.h"
 #include "imgproc/resample.h"
 #include <dirent.h>
@@ -57,19 +57,19 @@ static dict loadEntry( std::string name ) {
 	if( name.length()<=4 || name.substr(name.length()-4) != ".jpg" )
 		return r;
 	
-	Image8u im = imread( im_dir + "/" + name );
-	Image8u gt = imread( gt_dir + "/" + name );
-	if( !im.empty() && !gt.empty() ) {
+	std::shared_ptr<Image8u> im = imreadShared( im_dir + "/" + name );
+	std::shared_ptr<Image8u> gt = imreadShared( gt_dir + "/" + name );
+	if( im && gt && !im->empty() && !gt->empty() ) {
 		std::string s_name = name.substr(0,name.length()-4);
 		
 		// some images are too large, so we should resize them
-		if( im.W() != gt.W() || im.H() != im.W() )
-			im = resize( im, gt.W(), gt.H() );
+		if( im->W() != gt->W() || im->H() != im->W() )
+			im = std::make_shared<Image8u>( resize( *im, gt->W(), gt->H() ) );
 		
-		RMatrixXs seg( gt.H(), gt.W() );
-		for( int j=0; j<im.H(); j++ )
-			for( int i=0; i<im.W(); i++ )
-				seg(j,i) = ( (float)im(j,i,0)+im(j,i,1)+im(j,i,2) > 127*3 );
+		RMatrixXs seg( gt->H(), gt->W() );
+		for( int j=0; j<im->H(); j++ )
+			for( int i=0; i<im->W(); i++ )
+				seg(j,i) = ( (float)(*gt)(j,i,0)+(*gt)(j,i,1)+(*gt)(j,i,2) > 127*3 );
 		
 		r["image"] = im;
 		r["segmentation"] = seg;

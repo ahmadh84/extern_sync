@@ -156,6 +156,7 @@ VectorXi arange( int n ) {
 }
 VectorXi randomChoose( int M, int N ) {
 	static std::mt19937 gen;
+	if (N>M) N = M;
 	VectorXi r( N );
 	if( 2 * N < M ) {
 		std::uniform_int_distribution<> dis( 0, M - 1 );

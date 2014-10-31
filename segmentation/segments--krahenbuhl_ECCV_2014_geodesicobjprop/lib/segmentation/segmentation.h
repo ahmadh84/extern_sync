@@ -26,8 +26,10 @@
 */
 #pragma once
 #include "util/eigen.h"
-#include "graph.h"
+#include "util/graph.h"
 #include "imgproc/image.h"
+
+Edges computeEdges( const RMatrixXs & seg );
 
 class BoundaryDetector;
 class DirectedSobel;
@@ -81,13 +83,13 @@ public:
 	virtual void load( std::istream & s );
 };
 
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const RMatrixXf & thin_bnd, int approx_N );
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const RMatrixXf & thin_bnd, int approx_N, int NIT );
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const BoundaryDetector & detector, int approx_N );
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const BoundaryDetector & detector, int approx_N, int NIT );
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const SketchTokens & detector, int approx_N );
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const SketchTokens & detector, int approx_N, int NIT );
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const StructuredForest & detector, int approx_N );
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const StructuredForest & detector, int approx_N, int NIT );
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const DirectedSobel & detector, int approx_N );
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const DirectedSobel & detector, int approx_N, int NIT );
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const BoundaryDetector & detector, int approx_N );
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const BoundaryDetector & detector, int approx_N, int NIT );
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const SketchTokens & detector, int approx_N );
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const SketchTokens & detector, int approx_N, int NIT );
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const StructuredForest & detector, int approx_N );
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const StructuredForest & detector, int approx_N, int NIT );
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const RMatrixXf & thick_bnd, const RMatrixXf & thin_bnd, int approx_N );
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const RMatrixXf & thick_bnd, const RMatrixXf & thin_bnd, int approx_N, int NIT );
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const DirectedSobel & detector, int approx_N );
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const DirectedSobel & detector, int approx_N, int NIT );

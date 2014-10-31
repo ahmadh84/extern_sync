@@ -24,4 +24,16 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "spboundarydetector.h"
+#pragma once
+
+#include "eigen.h"
+
+// Solves a strictly convex QP of the form
+//  minimize_x  x' Q x  +  c' x
+//  subject to  A x <= b
+// Note Q needs to be positive definite!
+VectorXf qp( const RMatrixXf & Q, const VectorXf & c, const RMatrixXf & A, const VectorXf & b );
+VectorXd qp( const RMatrixXd & Q, const VectorXd & c, const RMatrixXd & A, const VectorXd & b );
+
+VectorXf sparseQp( const VectorXf & Q, const VectorXf & c, const SRMatrixXf & A, const VectorXf & b );
+VectorXd sparseQp( const VectorXf & Q, const VectorXd & c, const SRMatrixXd & A, const VectorXd & b );

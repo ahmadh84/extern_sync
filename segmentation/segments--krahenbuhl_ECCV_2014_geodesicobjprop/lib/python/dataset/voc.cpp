@@ -98,8 +98,8 @@ static dict loadEntry( const std::string & name, bool load_seg = true, bool load
 	}
 	if (load_im) {
 		sprintf( buf, (base_dir+VOC_IMAGES).c_str(), name.c_str() );
-		Image8u im = imread( buf );
-		if( im.empty() )
+		std::shared_ptr<Image8u> im = imreadShared( buf );
+		if( !im || im->empty() )
 			return dict();
 		r["image"] = im;
 	}

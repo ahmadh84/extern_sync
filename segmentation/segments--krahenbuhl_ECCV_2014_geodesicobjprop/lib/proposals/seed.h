@@ -105,17 +105,17 @@ class LearnedSeed: public ClonableImageSeedFunction<LearnedSeed> {
 protected:
 	SeedFeatureFactory features_;
 	std::vector<VectorXf> w_;
-	void train( std::vector<SeedFeatureVector> & f, const std::vector<VectorXs> & lbl, const std::vector<VectorXf> & weight, int max_feature );
+	void train( std::vector<SeedFeatureVector> & f, const std::vector<VectorXs> & lbl, int max_feature, int n_seed_per_obj=1 );
 	virtual VectorXi computeImageOverSegmentation( const ImageOverSegmentation & ios, int M ) const;
+	void initFeatures();
 public:
 	LearnedSeed();
-	void train( const std::vector<ImageOverSegmentation> & gops, const std::vector<VectorXs> & lbl, const std::vector<VectorXf> & weight, int max_feature );
-	void train( const std::vector<ImageOverSegmentation*> & gops, const std::vector<VectorXs> & lbl, const std::vector<VectorXf> & weight, int max_feature );
-	void train( const std::vector<ImageOverSegmentation> & gops, const std::vector<VectorXs> & lbl, int max_feature );
-	void train( const std::vector<ImageOverSegmentation*> & gops, const std::vector<VectorXs> & lbl, int max_feature );
+	void addSmallObjectMap( const VectorXf & map );
+	void train( const std::vector< std::shared_ptr<ImageOverSegmentation> > & gops, const std::vector<VectorXs> & lbl, int max_feature, int n_seed_per_obj=1 );
 	
 	virtual void save( std::ostream & s ) const;
 	virtual void load( std::istream & s );
 	void save( const std::string & s ) const;
 	void load( const std::string & s );
 };
+

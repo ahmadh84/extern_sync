@@ -29,6 +29,7 @@
 #include <string>
 #include <atomic>
 #include <memory>
+#include <stdexcept>
 
 double getTime();
 void tic();

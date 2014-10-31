@@ -29,9 +29,18 @@
 #include "gop.h"
 #include "util/graph.h"
 #include "util/eigen.h"
+#include "util/rasterize.h"
+#include "util/qp.h"
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+
+// For numpy 1.6 define NPY_ARRAY_*
+#if NPY_API_VERSION < 0x00000007
+#define NPY_ARRAY_C_CONTIGUOUS NPY_C_CONTIGUOUS
+#define NPY_ARRAY_ALIGNED      NPY_ALIGNED
+#endif
+
 
 struct Edge_pickle : pickle_suite
 {
@@ -103,14 +112,14 @@ struct EigenMatrixFromPython {
 		if (!PyArray_Check(obj_ptr) || PyArray_NDIM(array) > 2 ||  PyArray_NDIM(array) <= 0 || PyArray_TYPE(array) != NumpyEquivalentType<T>::type_code)
 			return 0;
 		if( R==1 || C==1 ) { // Eigen Vector
-			if ( PyArray_NDIM(array)==2 && PyArray_SHAPE(array)[0]>1 && PyArray_SHAPE(array)[1]>1 )
+			if ( PyArray_NDIM(array)==2 && PyArray_DIMS(array)[0]>1 && PyArray_DIMS(array)[1]>1 )
 				return 0;
-			if ( PyArray_NDIM(array)==1 && R*C > 0 && R*C != PyArray_SHAPE(array)[0] )
+			if ( PyArray_NDIM(array)==1 && R*C > 0 && R*C != PyArray_DIMS(array)[0] )
 				return 0;
 		}
-		else if ( R > 1 && PyArray_SHAPE(array)[0] != R )
+		else if ( R > 1 && PyArray_DIMS(array)[0] != R )
 			return 0;
-		else if ( C > 1 && PyArray_NDIM(array)<2 && PyArray_SHAPE(array)[1] != C )
+		else if ( C > 1 && PyArray_NDIM(array)<2 && PyArray_DIMS(array)[1] != C )
 			return 0;
 		return obj_ptr;
 	}
@@ -121,7 +130,7 @@ struct EigenMatrixFromPython {
 		PyArrayObject *array = reinterpret_cast<PyArrayObject*>(obj_ptr);
 		int flags = PyArray_FLAGS(array);
 		if (!(flags & NPY_ARRAY_C_CONTIGUOUS) || !(flags & NPY_ARRAY_ALIGNED))
-			throw std::invalid_argument("Contiguous and algigned array required!");
+			throw std::invalid_argument("Contiguous and aligned array required!");
 		const int ndims = PyArray_NDIM(array);
 		
 		const int dtype_size = (PyArray_DESCR(array))->elsize;
@@ -133,9 +142,9 @@ struct EigenMatrixFromPython {
 			ncols = C==1 ? 1 : PyArray_SIZE2(array);
 		}
 		else {
-			nrows = (R == Dynamic) ? PyArray_SHAPE(array)[0] : R;
+			nrows = (R == Dynamic) ? PyArray_DIMS(array)[0] : R;
 			if ( ndims > 1 )
-				ncols = (R == Dynamic) ? PyArray_SHAPE(array)[1] : R;
+				ncols = (R == Dynamic) ? PyArray_DIMS(array)[1] : R;
 		}
 		T* raw_data = reinterpret_cast<T*>(PyArray_DATA(array));
 		
@@ -149,7 +158,8 @@ struct EigenMatrixFromPython {
 	}
 };
 
-#define EIGEN_MATRIX_CONVERTER(Type) EigenMatrixFromPython<Type>(); to_python_converter<Type, EigenMatrixToPython<Type> >();
+// #define EIGEN_MATRIX_CONVERTER(Type) EigenMatrixFromPython<Type>(); to_python_converter<Type, EigenMatrixToPython<Type> >();
+#define EIGEN_MATRIX_CONVERTER(Type) EigenMatrixFromPython<Type>(); to_python_converter<Type, EigenMatrixToPython<Type> >();// to_python_converter<const Type &, EigenMatrixToPython<Type> >();
 
 #define MAT_CONV( N )\
 EIGEN_MATRIX_CONVERTER( N ## d );\
@@ -162,8 +172,45 @@ EIGEN_MATRIX_CONVERTER( N ## i8 );\
 EIGEN_MATRIX_CONVERTER( N ## u8 );\
 EIGEN_MATRIX_CONVERTER( N ## b )
 
+
+struct VecPolygons_pickle_suite : pickle_suite {
+	static object getstate(const std::vector<Polygons>& vp) {
+		std::stringstream ss;
+		unsigned int s = vp.size();
+		ss.write( (const char*)&s, sizeof(s) );
+		for( Polygons p: vp ) {
+			s = p.size();
+			ss.write( (const char*)&s, sizeof(s) );
+			for( Polygon v: p )
+				saveMatrixX( ss, v );
+		}
+		std::string data = ss.str();
+		return object( handle<>( PyBytes_FromStringAndSize( data.data(), data.size() ) ) );
+	}
+	static void setstate(std::vector<Polygons> & vp, const object & state) {
+		if(!PyBytes_Check(state.ptr()))
+			throw std::invalid_argument("Failed to unpickle, unexpected type!");
+		std::stringstream ss( std::string( PyBytes_AS_STRING(state.ptr()), PyBytes_Size(state.ptr()) ) );
+		unsigned int s;
+		ss.read( (char*)&s, sizeof(s) );
+		vp.resize( s );
+		for( Polygons & p: vp ) {
+			ss.read( (char*)&s, sizeof(s) );
+			p.resize( s );
+			for( Polygon & v: p )
+				loadMatrixX( ss, v );
+		}
+	}
+};
+
+#if PY_MAJOR_VERSION >= 3
+int init_numpy() { import_array(); }
+#else
+void init_numpy() { import_array(); }
+#endif
+
 void defineUtil() {
-	import_array1();
+	init_numpy();
 	boost::python::numeric::array::set_module_and_type("numpy", "ndarray");
 	
 	ADD_MODULE(util);
@@ -177,6 +224,9 @@ void defineUtil() {
 	.def(init<Edges>())
 	.def(vector_indexing_suite<Edges>());
 	
+	def("qp",static_cast<VectorXf(*)(const RMatrixXf &, const VectorXf &, const RMatrixXf &, const VectorXf &)>(&qp));
+	def("qp",static_cast<VectorXd(*)(const RMatrixXd &, const VectorXd &, const RMatrixXd &, const VectorXd &)>(&qp));
+	
 	// NOTE: When overloading functions always make sure to put the array/matrix function before the vector one
 	MAT_CONV( MatrixX );
 	MAT_CONV( RMatrixX );
@@ -184,4 +234,16 @@ void defineUtil() {
 	MAT_CONV( ArrayXX );
 	MAT_CONV( RArrayXX );
 	MAT_CONV( ArrayX );
+	
+	// Datastructures
+	class_< std::vector<int> >("VecInt").def( vector_indexing_suite< std::vector<int> >() );
+	class_< std::vector<float> >("VecFloat").def( vector_indexing_suite< std::vector<float> >() );
+	
+	class_<Polygons>("Polygons").def( vector_indexing_suite<Polygons,true >() );
+	class_< std::vector<Polygons> >("VecPolygons").def( vector_indexing_suite< std::vector<Polygons> >() )
+	.def_pickle(VecPolygons_pickle_suite());
+	
+	// Rasterize
+	def("rasterize",static_cast<RMatrixXf(*)(const Polygon &)>(&rasterize));
+	def("rasterize",static_cast<RMatrixXf(*)(const Polygons &)>(&rasterize));
 }

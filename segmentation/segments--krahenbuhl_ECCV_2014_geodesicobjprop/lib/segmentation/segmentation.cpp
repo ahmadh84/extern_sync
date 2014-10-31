@@ -36,6 +36,18 @@
 #include <limits>
 #include <queue>
 
+Edges computeEdges( const RMatrixXs & seg ) {
+	std::unordered_set<Edge> edges;
+	for( int j=0; j<seg.rows(); j++ )
+		for( int i=0; i<seg.cols(); i++ ) {
+			if( i && seg(j,i-1) != seg(j,i) )
+				edges.insert( Edge( seg(j,i-1), seg(j,i) ) );
+			if( j && seg(j-1,i) != seg(j,i) ) 
+				edges.insert( Edge( seg(j-1,i), seg(j,i) ) );
+		}
+	return Edges( edges.begin(), edges.end() );
+}
+
 /************ Geodesic K-Means ************/
 class PlanarGeodesicDistanceBase {
 public:
@@ -259,40 +271,28 @@ RMatrixXf ImageOverSegmentation::boundaryMap(bool thin) const {
 		}
 	return r;
 }
-static ImageOverSegmentation geodesicKMeans( const Image8u & im, const RMatrixXf & dx, const RMatrixXf & dy, int approx_N, int NIT ) {
-	return ImageOverSegmentation( im, geodesicKMeans(dx, dy, approx_N, NIT) );
+static std::shared_ptr<ImageOverSegmentation> computeGeodesicKMeans( const Image8u & im, const RMatrixXf & dx, const RMatrixXf & dy, int approx_N, int NIT ) {
+	return std::make_shared<ImageOverSegmentation>( im, geodesicKMeans(dx, dy, approx_N, NIT) );
 }
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const RMatrixXf & thin_bnd, int approx_N ) {
-	return geodesicKMeans( im, thin_bnd, approx_N, 1 );
-}
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const RMatrixXf & thin_bnd, int approx_N, int NIT ) {
-	const int W = im.W(), H = im.H();
-	RMatrixXf dx = thin_bnd.leftCols(W-1).array().max( thin_bnd.rightCols(W-1).array() ) + 1e-2;
-	RMatrixXf dy = thin_bnd.topRows(H-1).array().max( thin_bnd.bottomRows(H-1).array() ) + 1e-2;
-	ImageOverSegmentation r = geodesicKMeans(im, dx, dy, approx_N, NIT);
-	
-	r.setEdgeWeights( r.projectBoundary( thin_bnd, "p25" ) );
-	return r;
-}
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const BoundaryDetector & detector, int approx_N ) {
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const BoundaryDetector & detector, int approx_N ) {
 	return geodesicKMeans( im, detector, approx_N, 1 );
 }
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const BoundaryDetector & detector, int approx_N, int NIT ) {
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const BoundaryDetector & detector, int approx_N, int NIT ) {
 	RMatrixXf thin_bnd = detector.detectAndFilter( im );
 	
 	const int W = im.W(), H = im.H();
 	RMatrixXf dx = thin_bnd.leftCols(W-1).array().max( thin_bnd.rightCols(W-1).array() ) + 1e-2;
 	RMatrixXf dy = thin_bnd.topRows(H-1).array().max( thin_bnd.bottomRows(H-1).array() ) + 1e-2;
-	ImageOverSegmentation r = geodesicKMeans(im, dx, dy, approx_N, NIT);
+	std::shared_ptr<ImageOverSegmentation> r = computeGeodesicKMeans(im, dx, dy, approx_N, NIT);
 	
 	percentileFilter( thin_bnd.data(), thin_bnd.data(), W, H, 1, 1, 1 );
-	r.setEdgeWeights( r.projectBoundary( thin_bnd, "p65" ) );
+	r->setEdgeWeights( r->projectBoundary( thin_bnd, "p65" ) );
 	return r;
 }
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const SketchTokens & detector, int approx_N ) {
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const SketchTokens & detector, int approx_N ) {
 	return geodesicKMeans( im, detector, approx_N, 1 );
 }
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const SketchTokens & detector, int approx_N, int NIT ) {
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const SketchTokens & detector, int approx_N, int NIT ) {
 	RMatrixXf thick_bnd = detector.detect( im );
 	// Filter without suppression
 	RMatrixXf thin_bnd = detector.filter( thick_bnd, 0 );
@@ -302,15 +302,15 @@ ImageOverSegmentation geodesicKMeans( const Image8u & im, const SketchTokens & d
 	const int W = im.W(), H = im.H();
 	RMatrixXf dx = os_bnd.leftCols(W-1).array().max( os_bnd.rightCols(W-1).array() );
 	RMatrixXf dy = os_bnd.topRows(H-1).array().max( os_bnd.bottomRows(H-1).array() );
-	ImageOverSegmentation r = geodesicKMeans(im, dx, dy, approx_N, NIT);
+	std::shared_ptr<ImageOverSegmentation> r = computeGeodesicKMeans(im, dx, dy, approx_N, NIT);
 	
-	r.setEdgeWeights( r.projectBoundary( thick_bnd, "p25" ) );
+	r->setEdgeWeights( r->projectBoundary( thick_bnd, "p25" ) );
 	return r;
 }
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const StructuredForest & detector, int approx_N ) {
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const StructuredForest & detector, int approx_N ) {
 	return geodesicKMeans( im, detector, approx_N, 1 );
 }
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const StructuredForest & detector, int approx_N, int NIT ) {
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const StructuredForest & detector, int approx_N, int NIT ) {
 	RMatrixXf thick_bnd = detector.detect( im );
 	// Filter without suppression
 	RMatrixXf thin_bnd = detector.filter( thick_bnd, 0 );
@@ -321,24 +321,38 @@ ImageOverSegmentation geodesicKMeans( const Image8u & im, const StructuredForest
 	RMatrixXf dx = os_bnd.leftCols(W-1).array().max( os_bnd.rightCols(W-1).array() );
 	RMatrixXf dy = os_bnd.topRows(H-1).array().max( os_bnd.bottomRows(H-1).array() );
 	
-	ImageOverSegmentation r = geodesicKMeans(im, dx, dy, approx_N, NIT);
-	r.setEdgeWeights( r.projectBoundary( thick_bnd, "p25" ) );
+	std::shared_ptr<ImageOverSegmentation> r = computeGeodesicKMeans(im, dx, dy, approx_N, NIT);
+	r->setEdgeWeights( r->projectBoundary( thick_bnd, "p25" ) );
 	
 	return r;
 }
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const DirectedSobel & detector, int approx_N ) {
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const RMatrixXf & thick_bnd, const RMatrixXf & thin_bnd, int approx_N ) {
+	return geodesicKMeans( im, thick_bnd, thin_bnd, approx_N, 1 );
+}
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const RMatrixXf & thick_bnd, const RMatrixXf & thin_bnd, int approx_N, int NIT ) {
+	RMatrixXf os_bnd = thin_bnd.array() + 1e-2*thick_bnd.array() + 1e-2;
+	
+	const int W = im.W(), H = im.H();
+	RMatrixXf dx = os_bnd.leftCols(W-1).array().max( os_bnd.rightCols(W-1).array() );
+	RMatrixXf dy = os_bnd.topRows(H-1).array().max( os_bnd.bottomRows(H-1).array() );
+	
+	std::shared_ptr<ImageOverSegmentation> r = computeGeodesicKMeans(im, dx, dy, approx_N, NIT);
+	r->setEdgeWeights( r->projectBoundary( thick_bnd, "p25" ) );
+	return r;
+}
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const DirectedSobel & detector, int approx_N ) {
 	return geodesicKMeans( im, detector, approx_N, 1 );
 }
-ImageOverSegmentation geodesicKMeans( const Image8u & im, const DirectedSobel & detector, int approx_N, int NIT ) {
+std::shared_ptr<ImageOverSegmentation> geodesicKMeans( const Image8u & im, const DirectedSobel & detector, int approx_N, int NIT ) {
 	RMatrixXf dx, dy;
 	std::tie( dx, dy ) = detector.detectXY( im, false, true );
 	
 	// Let a spix grow approx 20x average size until we hit a spatial penalty of 1
 	const float sx = 0.05*sqrt(1.0*approx_N/(im.W()*im.H()));
-	ImageOverSegmentation r = geodesicKMeans(im, dx.array()+sx, dy.array()+sx, approx_N, NIT);
+	std::shared_ptr<ImageOverSegmentation> r = computeGeodesicKMeans(im, dx.array()+sx, dy.array()+sx, approx_N, NIT);
 	
 	std::tie( dx, dy ) = detector.detectXY( im, false, false );
-	r.setEdgeWeights( r.projectBoundary( dx, dy, "med" ).array().pow(0.8).matrix() );
+	r->setEdgeWeights( r->projectBoundary( dx, dy, "med" ).array().pow(0.8).matrix() );
 	return r;
 }
 void OverSegmentation::save(std::ostream &s) const {
@@ -380,10 +394,11 @@ VectorXs ImageOverSegmentation::projectSegmentation(const RMatrixXs &seg, bool c
 	// Return the highest voted segment
 	for( int i=0; i<Ns_; i++ ) {
 		int m;
-		vote.row(i).maxCoeff( &m );
-		r[i] = m;
-		if( conservative && neg[i] )
-			r[i] = -1;
+		if( vote.row(i).maxCoeff( &m ) > 0 ) {
+			r[i] = m;
+			if( conservative && neg[i] )
+				r[i] = -1;
+		}
 	}
 	return r;
 }

@@ -25,7 +25,6 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "segmentation/segmentation.h"
-#include "segmentation/graph.h"
 #include "segmentation/iouset.h"
 #include "contour/sketchtokens.h"
 #include "contour/structuredforest.h"
@@ -74,18 +73,16 @@ static np::ndarray segmentBinaryGraph( const np::ndarray & DX, const np::ndarray
 	return toNumpy(r);
 }
 template<typename BDetector>
-list generateGeodesicKMeans( const BDetector & det, const list & ims, int approx_N ) {
-	std::vector<Image8u*> img(len(ims));
-	for( int i=0; i<len(ims); i++ )
+std::vector< std::shared_ptr<ImageOverSegmentation> > generateGeodesicKMeans( const BDetector & det, const list & ims, int approx_N ) {
+	const int N = len(ims);
+	std::vector<Image8u*> img(N);
+	for( int i=0; i<N; i++ )
 		img[i] = extract<Image8u*>( ims[i] );
-	std::vector< ImageOverSegmentation* > ios( len(ims) );
+	std::vector< std::shared_ptr<ImageOverSegmentation> > ios( N );
 #pragma omp parallel for
-	for( int i=0; i<len(ims); i++ )
-		ios[i] = new ImageOverSegmentation( geodesicKMeans( *img[i], det, approx_N, 2 ) );
-	list r;
-	for( int i=0; i<len(ims); i++ )
-		r.append( ios[i] ); // Boost python is smart enough to manage the memory from here on
-	return r;
+	for( int i=0; i<N; i++ )
+		ios[i] = geodesicKMeans( *img[i], det, approx_N, 2 );
+	return ios;
 }
 np::ndarray boundaryDistance( const np::ndarray & sg ) {
 	checkArray( sg, short, 2, 2, true );
@@ -144,16 +141,16 @@ void defineSegmentation() {
 	.def( "add", &IOUSet::add );
 	
 	/***** Over Segmentation *****/
-	class_<OverSegmentation>( "OverSegmentation", init<const Edges &, const VectorXf &>() )
+	class_<OverSegmentation,std::shared_ptr<OverSegmentation> >( "OverSegmentation", init<const Edges &, const VectorXf &>() )
 	.def(init<const Edges &>())
 	.add_property("Ns",&OverSegmentation::Ns)
 	.add_property("edges",make_function(&OverSegmentation::edges,return_value_policy<return_by_value>()))
 	.add_property("edge_weights",make_function(&OverSegmentation::edgeWeights,return_value_policy<return_by_value>()),&OverSegmentation::setEdgeWeights)
-	.def_pickle( SaveLoad_pickle_suite<OverSegmentation>() );
+	.def_pickle( SaveLoad_pickle_suite_shared_ptr<OverSegmentation>() );
 	
-	class_< ImageOverSegmentation,bases<OverSegmentation> >( "ImageOverSegmentation", init<>() )
-	.def("boundaryMap",&ImageOverSegmentation::boundaryMap, ImageOverSegmentation_boundaryMap_overload( args("thin"), "Visualize the boundary map" ))
-	.def("projectSegmentation",&ImageOverSegmentation::projectSegmentation, ImageOverSegmentation_projectSegmentation_overload( args("gt_seg", "conservative"), "Project a ground truth segmentation onto a superpixel map" ))
+	class_< ImageOverSegmentation,std::shared_ptr<ImageOverSegmentation>,bases<OverSegmentation> >( "ImageOverSegmentation", init<>() )
+	.def("boundaryMap",&ImageOverSegmentation::boundaryMap, ImageOverSegmentation_boundaryMap_overload())
+	.def("projectSegmentation",&ImageOverSegmentation::projectSegmentation, ImageOverSegmentation_projectSegmentation_overload())
 	.def("project",static_cast<VectorXf (ImageOverSegmentation::*)(const RMatrixXf&,const std::string &)const>( &ImageOverSegmentation::project ))
 	.def("project",static_cast<RMatrixXf (ImageOverSegmentation::*)(const Image&,const std::string &)const>( &ImageOverSegmentation::project ))
 	.def("projectBoundary",static_cast<VectorXf (ImageOverSegmentation::*)(const RMatrixXf&,const std::string &)const>( &ImageOverSegmentation::projectBoundary ))
@@ -161,18 +158,21 @@ void defineSegmentation() {
 	.def("maskToBox",&ImageOverSegmentation::maskToBox)
 	.add_property("s",make_function(&ImageOverSegmentation::s,return_value_policy<return_by_value>()))
 	.add_property("image",make_function(&ImageOverSegmentation::image,return_value_policy<return_by_value>()))
-	.def_pickle( SaveLoad_pickle_suite<ImageOverSegmentation>() );
+	.def_pickle( SaveLoad_pickle_suite_shared_ptr<ImageOverSegmentation>() );
+	implicitly_convertible< std::shared_ptr<ImageOverSegmentation>, std::shared_ptr<OverSegmentation> >();
 	
-	def("geodesicKMeans",static_cast<ImageOverSegmentation(*)(const Image8u &, const BoundaryDetector &, int, int)>(geodesicKMeans));
-	def("geodesicKMeans",static_cast<ImageOverSegmentation(*)(const Image8u &, const BoundaryDetector &, int)>(geodesicKMeans));
-	def("geodesicKMeans",static_cast<ImageOverSegmentation(*)(const Image8u &, const SketchTokens &, int, int)>(geodesicKMeans));
-	def("geodesicKMeans",static_cast<ImageOverSegmentation(*)(const Image8u &, const SketchTokens &, int)>(geodesicKMeans));
-	def("geodesicKMeans",static_cast<ImageOverSegmentation(*)(const Image8u &, const StructuredForest &, int, int)>(geodesicKMeans));
-	def("geodesicKMeans",static_cast<ImageOverSegmentation(*)(const Image8u &, const StructuredForest &, int)>(geodesicKMeans));
-	def("geodesicKMeans",static_cast<ImageOverSegmentation(*)(const Image8u &, const DirectedSobel &, int, int)>(geodesicKMeans));
-	def("geodesicKMeans",static_cast<ImageOverSegmentation(*)(const Image8u &, const DirectedSobel &, int)>(geodesicKMeans));
-	def("geodesicKMeans",static_cast<ImageOverSegmentation(*)(const Image8u &, const RMatrixXf &, int, int)>(geodesicKMeans));
-	def("geodesicKMeans",static_cast<ImageOverSegmentation(*)(const Image8u &, const RMatrixXf &, int)>(geodesicKMeans));
+	class_< std::vector< std::shared_ptr<ImageOverSegmentation> > >("ImageOverSegmentationVec")
+	.def( vector_indexing_suite< std::vector< std::shared_ptr<ImageOverSegmentation> >, true >() )
+	.def_pickle( VectorSaveLoad_pickle_suite_shared_ptr<ImageOverSegmentation>() );
+	
+	def("geodesicKMeans",static_cast<std::shared_ptr<ImageOverSegmentation>(*)(const Image8u &, const BoundaryDetector &, int, int)>(geodesicKMeans));
+	def("geodesicKMeans",static_cast<std::shared_ptr<ImageOverSegmentation>(*)(const Image8u &, const BoundaryDetector &, int)>(geodesicKMeans));
+	def("geodesicKMeans",static_cast<std::shared_ptr<ImageOverSegmentation>(*)(const Image8u &, const SketchTokens &, int, int)>(geodesicKMeans));
+	def("geodesicKMeans",static_cast<std::shared_ptr<ImageOverSegmentation>(*)(const Image8u &, const SketchTokens &, int)>(geodesicKMeans));
+	def("geodesicKMeans",static_cast<std::shared_ptr<ImageOverSegmentation>(*)(const Image8u &, const StructuredForest &, int, int)>(geodesicKMeans));
+	def("geodesicKMeans",static_cast<std::shared_ptr<ImageOverSegmentation>(*)(const Image8u &, const StructuredForest &, int)>(geodesicKMeans));
+	def("geodesicKMeans",static_cast<std::shared_ptr<ImageOverSegmentation>(*)(const Image8u &, const DirectedSobel &, int, int)>(geodesicKMeans));
+	def("geodesicKMeans",static_cast<std::shared_ptr<ImageOverSegmentation>(*)(const Image8u &, const DirectedSobel &, int)>(geodesicKMeans));
 	
 	def( "generateGeodesicKMeans", &generateGeodesicKMeans<BoundaryDetector> );
 	def( "generateGeodesicKMeans", &generateGeodesicKMeans<SketchTokens> );

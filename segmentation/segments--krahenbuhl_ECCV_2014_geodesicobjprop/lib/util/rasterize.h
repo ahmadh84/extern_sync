@@ -25,23 +25,23 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #pragma once
-#include "spboundarydetector.h"
-#include "structuredforest.h"
+#include "eigen.h"
+#include <functional>
 
-class SPStructuredForest: public SPBoundaryDetector {
-protected:
-	StructuredForestSettings settings_;
-	LabelForest forest_;
-	// Patch data
-	RMatrixXu8 patches_;
-	VectorXu8 n_patch_lbl_;
-	RMatrixXf computeHist(const SFFeatures & f, const RMatrixXs & s, const Edges &edges, int N_EHIST_BIN, bool per_tree = false ) const;
-public:
-	SPStructuredForest( const StructuredForest & o );
-	virtual VectorXf detect(const Image8u &im, const RMatrixXs &s, const Edges &edges) const;
-	void load( const std::string & fn );
-	void save( const std::string & fn ) const;
-	// Feature functions
-	RMatrixXf computeHistPerTree(const Image8u &im, const RMatrixXs &s, const Edges &edges, int n_bin, bool normalize=false ) const;
+typedef RMatrixXf Polygon;
+typedef std::vector<Polygon> Polygons;
+
+enum RasterType {
+	OUTSIDE=0,
+	INSIDE=1,
+	OUTSIDE_BOUNDARY=2
 };
+typedef std::function<void ( int /*x*/, int /*y*/, RasterType /*val*/ )> RasterFunction;
 
+void rasterize( Ref<RMatrixXf> target, const Polygon & l );
+void rasterize( RasterFunction f, const Polygon & l );
+RMatrixXf rasterize( const Polygon & l );
+
+void rasterize( Ref<RMatrixXf> target, const Polygons & l );
+void rasterize( RasterFunction f, const Polygons & l );
+RMatrixXf rasterize( const Polygons & l );

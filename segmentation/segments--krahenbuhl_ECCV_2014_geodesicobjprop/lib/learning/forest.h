@@ -26,6 +26,9 @@
 */
 #pragma once
 #include "tree.h"
+#include <stdexcept>
+#include <iostream>
+#include <fstream>
 //#include "features.h"
 //#include <algorithm>
 
@@ -105,13 +108,13 @@ public:
 #undef get
 	}
 	void save( std::string fn ) const {
-		std::ofstream fs( fn );
+		std::ofstream fs( fn, std::ios::out | std::ios::binary );
 		if(!fs.is_open())
 			throw std::invalid_argument( "Could not write file '"+fn+"'!" );
 		save( fs );
 	}
 	void load( std::string fn ) {
-		std::ifstream fs( fn );
+		std::ifstream fs( fn, std::ios::in | std::ios::binary );
 		if(!fs.is_open())
 			throw std::invalid_argument( "Could not open file '"+fn+"'!" );
 		load( fs );

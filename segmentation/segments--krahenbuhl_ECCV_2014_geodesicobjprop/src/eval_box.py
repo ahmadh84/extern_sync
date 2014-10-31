@@ -1,3 +1,4 @@
+# -*- encoding: utf-8
 """
     Copyright (c) 2014, Philipp Krähenbühl
     All rights reserved.
@@ -24,7 +25,7 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from gop import *
+# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8from gop import *
 import numpy as np
 from time import sleep
 from pickle import dump,load
@@ -44,7 +45,10 @@ bos = []
 ns = []
 for N_S,N_T in [(1,1),(1,2),(3,2),(8,3),(12,4),(18,5),(50,5),(70,6),(125,7),(150,10),(180,15),(200,20)]:#,(200,40)]:
 	if N_S>3:
-		prop_settings.foreground_seeds = proposals.GeodesicSeed() # load( open('../data/seed.dat','rb') )
+		#prop_settings.foreground_seeds = proposals.GeodesicSeed()
+		seed = proposals.LearnedSeed()
+		seed.load( '../data/seed_final.dat' )# load( open('../data/seed_final.dat','rb') )
+		prop_settings.foreground_seeds = seed
 	if N_T>=5:
 		prop_settings.max_iou = 0.8
 	if N_T>6:

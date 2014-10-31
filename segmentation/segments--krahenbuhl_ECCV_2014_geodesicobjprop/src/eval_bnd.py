@@ -1,3 +1,4 @@
+# -*- encoding: utf-8
 """
     Copyright (c) 2014, Philipp Krähenbühl
     All rights reserved.
@@ -24,18 +25,17 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from gop import *
+# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8from gop import *
 import numpy as np
 from util import *
 
 LATEX_OUTPUT=True
 
-# for bnd in ['gPb']:
 for bnd in ['st','sf','mssf','ds']:
 	# Load the dataset
 	over_segs,segmentations,boxes = loadVOCAndOverSeg( "test", detector=bnd, year="2012" )
 	has_box = [len(b)>0 for b in boxes]
-	boxes = [np.vstack(b).astype(np.float32) if len(b)>0 else np.zeros((0,4),dtype=np.float32) for b in boxes]
+	boxes = [np.vstack(b).astype(np.int32) if len(b)>0 else np.zeros((0,4),dtype=np.int32) for b in boxes]
 
 	# Generate the proposals
 	s = []

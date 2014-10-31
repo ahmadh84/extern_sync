@@ -1,3 +1,4 @@
+# -*- encoding: utf-8
 """
     Copyright (c) 2014, Philipp Krähenbühl
     All rights reserved.
@@ -24,7 +25,7 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from gop import *
+# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8from gop import *
 from util import *
 import numpy as np
 
@@ -33,6 +34,7 @@ def trainSeed( N_SEED=200, shrink=0.5, detector='mssf' ):
 	print("  * Loading dataset")
 	over_segs,segmentations,boxes = loadVOCAndOverSeg( "train", detector=detector )
 	print("  * Reprojecting ")
+	print( (segmentations[0]+1).dtype )
 	psegs = [over_seg.projectSegmentation( seg+1 )-1 for over_seg,seg in zip(over_segs,segmentations)]
 
 	print("  * Shrinking segments")
@@ -76,7 +78,7 @@ def trainSeed( N_SEED=200, shrink=0.5, detector='mssf' ):
 
 def main( argv ):
 	s = trainSeed()
-	s.save( '../data/seed.dat' )
+	s.save( '../data/seed_final.dat' )
 	return 1
 
 if __name__ == "__main__":

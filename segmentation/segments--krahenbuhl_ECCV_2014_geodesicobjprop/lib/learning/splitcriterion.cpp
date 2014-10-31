@@ -27,6 +27,7 @@
 #include "util/win_util.h"
 #include "util/threading.h"
 #include "splitcriterion.h"
+#include <random>
 #include <stdexcept>
 #include <iostream>
 #include <Eigen/SVD>
@@ -112,8 +113,8 @@ public:
 		// Count the label occurence
 		const int n_lbl = lbl_.maxCoeff()+1;
 		VectorXi lbl_cnt = VectorXi::Zero( n_lbl );
-		for( int l: lbl_ )
-			lbl_cnt[l]++;
+		for( int i=0; i<lbl_.size(); i++ )
+			lbl_cnt[lbl_[i]]++;
 		// And return the maximum
 		int rep_lbl = 0;
 		for( int i=0; i<lbl_.size(); i++ )
