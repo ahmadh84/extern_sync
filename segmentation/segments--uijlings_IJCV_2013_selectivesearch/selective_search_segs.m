@@ -16,11 +16,16 @@ function [segs, seg_obj] = selective_search_segs(im_filepath, params)
     root_dir = fileparts(which(mfilename));
     addpath(fullfile(root_dir, 'Dependencies'));
     
-    if exist('params','var')==0 || (isstr(params) && strcmp(params,'single'))
+    if exist('params','var')==1 && ischar(params) 
+        fprintf('Running selective search with ''%s'' setting\n', ...
+                params);
+    end
+    
+    if exist('params','var')==0 || (ischar(params) && strcmp(params,'single'))
         params = single_params();
-    elseif isstr(params) && strcmp(params,'fast')
+    elseif ischar(params) && strcmp(params,'fast')
         params = fast_params();
-    elseif isstr(params) && strcmp(params,'quality')
+    elseif ischar(params) && strcmp(params,'quality')
         params = quality_params();
     end
     
