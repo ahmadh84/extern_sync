@@ -63,7 +63,7 @@ minBoxWidth = 20;
 
 % Test the boxes
 load('GroundTruthVOC2007test.mat'); % Load ground truth boxes and images and image names
-VOCImgPath = '/media/Data/Databases/VOCdevkit/VOC2007/JPEGImages/%s.jpg'
+VOCImgPath = '/data/images/everingham_IJCV_2010_pascalvoc/JPEGImages/%s.jpg';
 fprintf('After box extraction, boxes smaller than %d pixels will be removed\n', minBoxWidth);
 fprintf('Obtaining boxes for Pascal 2007 test set:\n');
 totalTime = 0;

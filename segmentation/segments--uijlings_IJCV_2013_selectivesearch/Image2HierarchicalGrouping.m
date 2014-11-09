@@ -1,4 +1,5 @@
-function [boxes blobIndIm blobBoxes hierarchy priority] = Image2HierarchicalGrouping(im, sigma, k, minSize, colourType, functionHandles)
+function [boxes blobIndIm blobBoxes hierarchy priority simfunc_idxs order_idxs] = ...
+    Image2HierarchicalGrouping(im, sigma, k, minSize, colourType, functionHandles)
 % function [boxes blobIndIm blobBoxes hierarchy] = Image2HierarchicalGrouping
 %                              (im, sigma, k, minSize, colourType, functionHandles)
 %
@@ -26,6 +27,11 @@ function [boxes blobIndIm blobBoxes hierarchy priority] = Image2HierarchicalGrou
 % Get initial segmentation, boxes, and neighbouring blobs
 [blobIndIm blobBoxes neighbours] = mexFelzenSegmentIndex(imageToSegment, sigma, k, minSize);
 numBlobs = size(blobBoxes,1);
+
+% for idx = min(blobIndIm(:)):max(blobIndIm(:))
+% [r,c] = find(blobIndIm == idx);
+% assert(all([min(r), min(c), max(r), max(c)] == blobBoxes(idx,:)));
+% end
 
 % Skip hierarchical grouping if segmentation results in single region only
 if numBlobs == 1
@@ -81,11 +87,15 @@ i = i+1;
 boxes{i} = blobBoxes;
 priority{i} = ones(size(boxes{i}, 1), 1) * (size(boxes{1}, 1)+1);
 
+simfunc_idxs = duplicateElems([1:length(functionHandles) 0], ...
+                              cellfun(@numel, priority))';
+order_idxs = (1:numel(simfunc_idxs))';
+
 % Concatenate boxes and priorities resulting from the different merging
 % strategies
 boxes = cat(1, boxes{:});
 priority = cat(1, priority{:});
 [priority ids] = sort(priority, 'ascend');
 boxes = boxes(ids,:);
-
-
+simfunc_idxs = simfunc_idxs(ids);
+order_idxs = order_idxs(ids);
