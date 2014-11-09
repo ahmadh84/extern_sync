@@ -8,9 +8,18 @@
 function [ masks ] = genAllMasks(segs)
     num_cfgs = numel(segs.hierarchies);
     
+    sz = size(segs.sp_maps);
+    fullblob.rect = [1 1 sz(1) sz(2)];
+    fullblob.mask = true(sz(1), sz(2));
+    fullblob.size = sz(1) * sz(2);
+    
     testBlobs = cell(num_cfgs,1);
     % iterate over all the configurations, and generate blobs for them
     for idx = 1:num_cfgs
+        if length(segs.hierarchies{idx}) == 0
+            testBlobs{idx} = {fullblob};
+            continue;
+        end
         testBlobsT = cell(length(segs.hierarchies{idx})+1, 1);
         
         % get the initial blobs (superpixels) and the first hierarcy blobs

@@ -39,6 +39,8 @@ if numBlobs == 1
     boxes = blobBoxes;
     hierarchy = [];
     priority = 1; % priority is legacy
+    simfunc_idxs = 1;
+    order_idxs = 1;
     return;
 end
 
