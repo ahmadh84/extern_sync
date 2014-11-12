@@ -15,6 +15,7 @@
 % ------------------------------------------------------------------------
 
 function ms_struct = ms_matrix2struct( ms_matrix )
+    ms_struct = struct;
     for ii=1:size(ms_matrix,1)
         ms_struct(ii).parent = ms_matrix(ii,end); %#ok<AGROW>
         children = ms_matrix(ii,1:end-1);

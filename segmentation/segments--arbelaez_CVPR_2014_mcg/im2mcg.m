@@ -128,11 +128,13 @@ for ii=1:n_hiers
     ms{ii}            = curr_hier.ms_matrix;
     lps = cat(3, lps, curr_hier.leaves_part);
 end
+% detect empty hierarchies
+empty_hier = cellfun(@isempty, ms);
 seg_obj.timings.ucm_to_hier_time = toc(t);
 
 % Get full cands, represented on a fused hierarchy
 t = tic();
-[f_lp,f_ms,cands,start_ths,end_ths] = full_cands_from_hiers(lps,ms,ths,preload.pareto_n_cands);
+[f_lp,f_ms,cands,start_ths,end_ths] = full_cands_from_hiers(lps,ms,ths,preload.pareto_n_cands,empty_hier);
 seg_obj.timings.cand_from_hier_time = toc(t);
 seg_obj.num_segs.init_segs = size(cands,1);
 
