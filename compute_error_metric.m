@@ -93,9 +93,9 @@ function [f, extra_info] = compute_error_metric(masks, GT, params, ...
     all_is = all_is';
     if ~exist('type','var') || isempty(type) || strcmp(type,'overlap')
         f = all_is(:,4) ./ (sum(all_is(:,2:4),2) + eps);
-        extra_info.fp = all_is(:,2);
-        extra_info.fn = all_is(:,3);
-        extra_info.tp = all_is(:,4);
+        extra_info.fp = uint32(all_is(:,2));
+        extra_info.fn = uint32(all_is(:,3));
+        extra_info.tp = uint32(all_is(:,4));
     elseif strcmp(type,'intersect_gt')
         f = all_is(:,4) ./ (all_is(:,2) + all_is(:,4) + eps);
     elseif strcmp(type,'incorrect_pixels')
@@ -108,4 +108,6 @@ function [f, extra_info] = compute_error_metric(masks, GT, params, ...
             f(i) = norm(gtcen - maskcen);
         end
     end
+    
+    f = single(f);
 end
