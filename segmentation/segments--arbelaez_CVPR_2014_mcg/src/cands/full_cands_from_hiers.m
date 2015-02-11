@@ -13,7 +13,12 @@
 %    Computer Vision and Pattern Recognition (CVPR) 2014.
 % Please consider citing the paper if you use this code.
 % ------------------------------------------------------------------------
-function [f_lp, f_ms, cands, start_ths, end_ths] = full_cands_from_hiers(lps,ms,ths,n_cands)
+function [f_lp, f_ms, cands, start_ths, end_ths] = full_cands_from_hiers(lps,ms,ths,n_cands,empty_hier)
+
+lps = lps(:,:,~empty_hier);
+ms = ms(~empty_hier);
+ths = ths(~empty_hier);
+n_cands = n_cands(:,~empty_hier);
 
 n_hiers  = length(ms);
 n_r_cand = size(n_cands,1);
