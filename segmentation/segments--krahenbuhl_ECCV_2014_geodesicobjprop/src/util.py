@@ -25,7 +25,7 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8from sys import stdout
+from sys import stdout
 
 class ProgressPrint:
 	def __init__( self, message, start, end=None, show_mem=False ):

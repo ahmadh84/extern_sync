@@ -25,7 +25,7 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8def __setup_path():
+def __setup_path():
 	import os, sys, inspect, numpy as np
 	paths = ['../build/','../build/release','../build/debug']
 	current_path = os.path.split(inspect.getfile( inspect.currentframe() ))[0]

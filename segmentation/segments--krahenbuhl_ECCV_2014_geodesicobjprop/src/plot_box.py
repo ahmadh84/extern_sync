@@ -25,7 +25,7 @@
 	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8# -*- encoding: utf-8from pylab import *
+from pylab import *
 import numpy as np
 from sys import argv
 from pickle import load

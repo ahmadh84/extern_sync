@@ -45,6 +45,12 @@ classdef Proposal
         function r = propose(this,os)
             r = gop_mex( 'Proposal_propose', this.c_p, os.c_s );
         end
+        function sobj = saveobj(this)
+            error( 'You cannot load/save a Proposal object!' );
+        end
+        function loadobj(this, sobj)
+            error( 'You cannot load/save a Proposal object!' );
+        end
         function delete(this)
             gop_mex( 'freeProposal', this.c_p );
         end

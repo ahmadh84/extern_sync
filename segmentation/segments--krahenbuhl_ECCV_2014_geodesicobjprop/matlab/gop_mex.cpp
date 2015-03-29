@@ -235,7 +235,7 @@ static void ImageOverSegmentation_serialize( MEX_ARGS ) {
 	os->save( ss );
 	std::string data = ss.str();
 	// And then copy it to a matlab array
-	mwSize dims[1] = {data.size()};
+	mwSize dims[1] = {(mwSize)data.size()};
 	plhs[0] = mxCreateNumericArray( 1, dims, mxUINT8_CLASS, mxREAL );
 	memcpy( mxGetData(plhs[0]), data.c_str(), data.size() );
 }
