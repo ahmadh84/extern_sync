@@ -18,7 +18,7 @@ if doNames
         imNames = imageNamesC;
     end    
 end
-  
+
 % Convert to images
 idx = 1;
 for i=1:length(blobs)

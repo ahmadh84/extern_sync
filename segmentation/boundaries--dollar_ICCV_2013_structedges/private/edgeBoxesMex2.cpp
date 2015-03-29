@@ -35,14 +35,14 @@ typedef struct { int c, r, w, h; float s; vectorf edgeArr; } Box;
 typedef vector<Box> Boxes;
 bool boxesCompare( const Box &a, const Box &b ) { return a.s<b.s; }
 float boxesOverlap( Box &a, Box &b );
-void boxesNms( Boxes &boxes, float thr, int maxBoxes );
+void boxesNms( Boxes &boxes, float thr, float eta, int maxBoxes );
 
 // main class for generating edge boxes
 class EdgeBoxGenerator
 {
 public:
   // method parameters (must be manually set)
-  float _alpha, _beta, _minScore; int _maxBoxes;
+  float _alpha, _beta, _eta, _minScore; int _maxBoxes;
   float _edgeMinMag, _edgeMergeThr, _clusterMinMag;
   float _maxAspectRatio, _minBoxArea, _gamma, _kappa;
 
@@ -502,7 +502,7 @@ void EdgeBoxGenerator::scoreAllBoxes( Boxes &boxes )
     collectEdgeVals(boxes[i]);
   }
   sort(boxes.rbegin(),boxes.rend(),boxesCompare);
-  boxes.resize(k); boxesNms(boxes,_beta,_maxBoxes);
+  boxes.resize(k); boxesNms(boxes,_beta,_eta,_maxBoxes);
 }
 
 float boxesOverlap( Box &a, Box &b ) {
@@ -516,20 +516,21 @@ float boxesOverlap( Box &a, Box &b ) {
   return areaij / (areai + areaj - areaij);
 }
 
-void boxesNms( Boxes &boxes, float thr, int maxBoxes )
+void boxesNms( Boxes &boxes, float thr, float eta, int maxBoxes )
 {
   sort(boxes.rbegin(),boxes.rend(),boxesCompare);
   if( thr>.99 ) return; const int nBin=10000;
   const float step=1/thr, lstep=log(step);
   vector<Boxes> kept; kept.resize(nBin+1);
-  int i=0, j, k, n=(int) boxes.size(), m=0, b;
+  int i=0, j, k, n=(int) boxes.size(), m=0, b, d=1;
   while( i<n && m<maxBoxes ) {
     b = boxes[i].w*boxes[i].h; bool keep=1;
-    b = clamp(int(ceil(log(float(b))/lstep)),1,nBin-1);
-    for( j=b-1; j<=b+1; j++ )
+    b = clamp(int(ceil(log(float(b))/lstep)),d,nBin-d);
+    for( j=b-d; j<=b+d; j++ )
       for( k=0; k<kept[j].size(); k++ ) if( keep )
         keep = boxesOverlap( boxes[i], kept[j][k] ) <= thr;
     if(keep) { kept[b].push_back(boxes[i]); m++; } i++;
+    if(keep && eta<1 && thr>.5) { thr*=eta; d=ceil(log(1/thr)/lstep); }
   }
   boxes.resize(m); i=0;
   for( j=0; j<nBin; j++ )
@@ -544,7 +545,7 @@ void boxesNms( Boxes &boxes, float thr, int maxBoxes )
 void mexFunction( int nl, mxArray *pl[], int nr, const mxArray *pr[] )
 {
   // check and get inputs
-  if(nr != 13) mexErrMsgTxt("Thirteen inputs required.");
+  if(nr != 14) mexErrMsgTxt("Fourteen inputs required.");
   if(nl > 6) mexErrMsgTxt("At most six outputs expected.");
   if(mxGetClassID(pr[0])!=mxSINGLE_CLASS) mexErrMsgTxt("E must be a float*");
   if(mxGetClassID(pr[1])!=mxSINGLE_CLASS) mexErrMsgTxt("O must be a float*");
@@ -566,15 +567,16 @@ void mexFunction( int nl, mxArray *pl[], int nr, const mxArray *pr[] )
   EdgeBoxGenerator edgeBoxGen; Boxes boxes;
   edgeBoxGen._alpha = float(mxGetScalar(pr[2]));
   edgeBoxGen._beta = float(mxGetScalar(pr[3]));
-  edgeBoxGen._minScore = float(mxGetScalar(pr[4]));
-  edgeBoxGen._maxBoxes = int(mxGetScalar(pr[5]));
-  edgeBoxGen._edgeMinMag = float(mxGetScalar(pr[6]));
-  edgeBoxGen._edgeMergeThr = float(mxGetScalar(pr[7]));
-  edgeBoxGen._clusterMinMag = float(mxGetScalar(pr[8]));
-  edgeBoxGen._maxAspectRatio = float(mxGetScalar(pr[9]));
-  edgeBoxGen._minBoxArea = float(mxGetScalar(pr[10]));
-  edgeBoxGen._gamma = float(mxGetScalar(pr[11]));
-  edgeBoxGen._kappa = float(mxGetScalar(pr[12]));
+  edgeBoxGen._eta = float(mxGetScalar(pr[4]));
+  edgeBoxGen._minScore = float(mxGetScalar(pr[5]));
+  edgeBoxGen._maxBoxes = int(mxGetScalar(pr[6]));
+  edgeBoxGen._edgeMinMag = float(mxGetScalar(pr[7]));
+  edgeBoxGen._edgeMergeThr = float(mxGetScalar(pr[8]));
+  edgeBoxGen._clusterMinMag = float(mxGetScalar(pr[9]));
+  edgeBoxGen._maxAspectRatio = float(mxGetScalar(pr[10]));
+  edgeBoxGen._minBoxArea = float(mxGetScalar(pr[11]));
+  edgeBoxGen._gamma = float(mxGetScalar(pr[12]));
+  edgeBoxGen._kappa = float(mxGetScalar(pr[13]));
   edgeBoxGen.generate( boxes, E, O, V, segIdptr, segCptr, segRptr );
 
   // create output bbs and output to Matlab
