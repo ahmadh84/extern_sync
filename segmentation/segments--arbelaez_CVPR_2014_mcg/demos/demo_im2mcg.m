@@ -3,7 +3,7 @@
 clear all;close all;home;
 
 % Read an input image
-I = imread(fullfile(root_dir, 'demos','101087.jpg'));
+I = imread(fullfile(mcg_root, 'demos','101087.jpg'));
 
 tic;
 % Test the 'fast' version, which takes around 5 seconds in mean
@@ -11,7 +11,7 @@ tic;
 toc;
 
 tic;
-% Test the 'accurate' version, which tackes around 30 seconds in mean
+% Test the 'accurate' version, which tackes around 20 seconds in mean
 [candidates_mcg, ucm2_mcg] = im2mcg(I,'accurate');
 toc;
 

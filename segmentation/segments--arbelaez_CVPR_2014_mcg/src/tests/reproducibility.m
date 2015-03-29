@@ -13,18 +13,26 @@
 %    Computer Vision and Pattern Recognition (CVPR) 2014.
 % Please consider citing the paper if you use this code.
 % ------------------------------------------------------------------------
-% Please note that for BSDS500, you should put all *.mat from test, val,
-% and train in the same folder
+% Test reproducibility of the code
 % ------------------------------------------------------------------------
 
-function ground_truth = get_ground_truth( database, image_id )
-    if strcmp(database,'pascal2012')
-        ground_truth.object = imread(fullfile(database_root_dir(database), 'SegmentationObject', [image_id '.png']));
-        ground_truth.class  = imread(fullfile(database_root_dir(database), 'SegmentationClass', [image_id '.png']));
-    elseif strcmp(database,'bsds500')
-        ground_truth = loadvar(fullfile(database_root_dir(database), 'groundTruth', [image_id '.mat']),'gt_seg');
-    else
-        error(['Unknown database: ' database]);
-    end
+% Read an input image
+I = imread(fullfile(mcg_root, 'demos','101087.jpg'));
+
+% Compute SCG twice
+candidates_scg1 = im2mcg(I,'fast');
+candidates_scg2 = im2mcg(I,'fast');
+
+eq_scg = isequal(candidates_scg1,candidates_scg2);
+
+candidates_mcg1 = im2mcg(I,'accurate');
+candidates_mcg2 = im2mcg(I,'accurate');
+
+eq_mcg = isequal(candidates_mcg1,candidates_mcg2);
+
+if eq_scg && eq_mcg
+    disp('OK: Reproducibility tests passed')
+else
+    disp('ERROR: Reproducibility tests not passed!!')
 end
 

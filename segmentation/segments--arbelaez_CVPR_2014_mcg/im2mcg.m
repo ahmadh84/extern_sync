@@ -53,7 +53,7 @@ end
 % Load pre-trained Structured Forest model
 if ~isfield(preload, 'sf_model')
     preload.sf_model = ...
-        loadvar(fullfile(root_dir, 'datasets', 'models', 'sf_modelFinal.mat'),'model');
+        loadvar(fullfile(mcg_root, 'datasets', 'models', 'sf_modelFinal.mat'),'model');
 end
 
 start_time = tic();
@@ -78,13 +78,13 @@ if strcmp(mode,'fast')
     % Load pre-trained pareto point
     if ~isfield(preload, 'pareto_n_cands')
         preload.pareto_n_cands = ...
-            loadvar(fullfile(root_dir, 'datasets', 'models', 'scg_pareto_point_train2012.mat'),'n_cands');
+            loadvar(fullfile(mcg_root, 'datasets', 'models', 'scg_pareto_point_train2012.mat'),'n_cands');
     end
 
     % Load pre-trained random forest regresssor for the ranking of candidates
     if ~isfield(preload, 'rf_regressor')
         preload.rf_regressor = ...
-            loadvar(fullfile(root_dir, 'datasets', 'models', 'scg_rand_forest_train2012.mat'),'rf');
+            loadvar(fullfile(mcg_root, 'datasets', 'models', 'scg_rand_forest_train2012.mat'),'rf');
     end
     total_load_time = toc(t2);
     
@@ -93,19 +93,19 @@ elseif strcmp(mode,'accurate')
     scales = [2, 1, 0.5];
 
     % Get the hierarchies at each scale and the global hierarchy
-    [ucm2,ucms] = img2ucms(image, preload.sf_model, scales);
+    [ucm2,ucms,times] = img2ucms(image, preload.sf_model, scales);
     all_ucms = cat(3,ucm2,ucms(:,:,3),ucms(:,:,2),ucms(:,:,1)); % Multi, 0.5, 1, 2
 
     t2 = tic();
     % Load pre-trained pareto point
     if ~isfield(preload, 'pareto_n_cands')
         preload.pareto_n_cands = ...
-            loadvar(fullfile(root_dir, 'datasets', 'models', 'mcg_pareto_point_train2012.mat'),'n_cands');
+            loadvar(fullfile(mcg_root, 'datasets', 'models', 'mcg_pareto_point_train2012.mat'),'n_cands');
     end
 
     % Load pre-trained random forest regresssor for the ranking of candidates
     if ~isfield(preload, 'rf_regressor')
-        preload.rf_regressor = loadvar(fullfile(root_dir, 'datasets', 'models', 'mcg_rand_forest_train2012.mat'),'rf');
+        preload.rf_regressor = loadvar(fullfile(mcg_root, 'datasets', 'models', 'mcg_rand_forest_train2012.mat'),'rf');
     end
     total_load_time = toc(t2);
 else
@@ -134,13 +134,18 @@ seg_obj.timings.ucm_to_hier_time = toc(t);
 
 % Get full cands, represented on a fused hierarchy
 t = tic();
-[f_lp,f_ms,cands,start_ths,end_ths] = full_cands_from_hiers(lps,ms,ths,preload.pareto_n_cands,empty_hier);
+[f_lp,f_ms,cands,start_ths,end_ths] = full_cands_from_hiers(lps,ms,ths,preload.pareto_n_cands);
 seg_obj.timings.cand_from_hier_time = toc(t);
 seg_obj.num_segs.init_segs = size(cands,1);
 
 % Hole filling and complementary candidates
 t = tic();
-[cands_hf, cands_comp] = hole_filling(double(f_lp), double(f_ms), cands); %#ok<NASGU>
+if ~isempty(f_ms)
+    [cands_hf, cands_comp] = hole_filling(double(f_lp), double(f_ms), cands); %#ok<NASGU>
+else
+    cands_hf = cands;
+    cands_comp = cands; %#ok<NASGU>
+end
 seg_obj.timings.hole_filling_time = toc(t);
 seg_obj.num_segs.hole_filled_segs = size(cands_hf,1);
 
@@ -187,13 +192,20 @@ candidates.scores = scores(new_ids);
 bboxes = bboxes(new_ids,:); 
 seg_obj.timings.max_margin_time = toc(t);
 
+% Filter boxes by overlap
+red_bboxes = mex_box_reduction(bboxes, 0.95);
+
 % Change the coordinates of bboxes to be coherent with
 % other results from other sources (sel_search, etc.)
-candidates.bboxes = [bboxes(:,2) bboxes(:,1) bboxes(:,4) bboxes(:,3)];
+candidates.bboxes = [red_bboxes(:,2) red_bboxes(:,1) red_bboxes(:,4) red_bboxes(:,3)];
 
 % Get the labels of leave regions that form each candidates
 candidates.superpixels = f_lp;
-candidates.labels = cands2labels(cand_labels,f_ms);
+if ~isempty(f_ms)
+    candidates.labels = cands2labels(cand_labels,f_ms);
+else
+    candidates.labels = {1};
+end
 
 seg_obj.num_segs.FINAL = size(cand_labels,1);
 seg_obj.timings.total_seg_time = toc(start_time) - total_load_time;
@@ -207,5 +219,9 @@ fprintf('Total time %.2f secs\n', seg_obj.timings.total_seg_time);
 
 % Transform the results to masks
 if compute_masks
-    candidates.masks = cands2masks(cand_labels, f_lp, f_ms);
+    if ~isempty(f_ms)
+        candidates.masks = cands2masks(cand_labels, f_lp, f_ms);
+    else
+        candidates.masks = true(size(f_lp));
+    end
 end

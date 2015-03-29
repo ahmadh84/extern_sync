@@ -13,13 +13,16 @@
 %    Computer Vision and Pattern Recognition (CVPR) 2014.
 % Please consider citing the paper if you use this code.
 % ------------------------------------------------------------------------
-% Adapt the paths to the place where you have downloaded PASCAL and BSDS.
-% In the case of BSDS500, you should put all images and ground truths 
-% into the same folder, discarding the "val", "test", "train" folders
+% Adapt the paths to the place where you have downloaded PASCAL.
 % ------------------------------------------------------------------------
+
 function db_root_dir = database_root_dir( database )
 if strcmp(database,'pascal2012')
     db_root_dir = '/data/images/everingham_IJCV_2010_pascalvoc';
+elseif strcmp(database,'COCO')
+    db_root_dir = '/data/images/lin_ECCV_2014_mscoco';
+elseif strcmp(database,'SBD')
+    db_root_dir = '/path/to/SBD/';
 elseif strcmp(database,'bsds500')
     db_root_dir = '/path/to/BSDS500/';
 else

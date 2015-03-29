@@ -22,17 +22,17 @@ if nargin==0
     mode = 'accurate';
 end
 if nargin<2
-    database = 'pascal2012';
+    database = 'COCO';
 end
 if nargin<3
-    gt_set = 'val2012';
+    gt_set = 'val2014';
 end
 
 % Create out folder
 if strcmp(mode,'fast')
-    res_dir = fullfile(root_dir,'datasets',database,'SCG-ucm');
+    res_dir = fullfile(mcg_root,'datasets',database,'SCG-ucm');
 elseif strcmp(mode,'accurate')
-    res_dir = fullfile(root_dir,'datasets',database,'MCG-ucm');
+    res_dir = fullfile(mcg_root,'datasets',database,'MCG-ucm');
 else
     error('Unknown mode for MCG: Possibilities are ''fast'' or ''accurate''')
 end
@@ -44,7 +44,7 @@ end
 im_ids = database_ids(database,gt_set);
 
 % Sweep all images and process them in parallel
-matlabpool(4);
+matlabpool open;
 parfor ii=1:length(im_ids)
     % Read image
     im = get_image(database,im_ids{ii});
@@ -55,7 +55,7 @@ parfor ii=1:length(im_ids)
         % Call the actual code
         ucm2 = im2ucm(im, mode);
         
-        % Store ucms at each scale separately
+        % Store ucm
         parsave(fullfile(res_dir,[im_ids{ii} '.mat']),ucm2)
     end
 end

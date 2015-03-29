@@ -13,8 +13,11 @@
 %    Computer Vision and Pattern Recognition (CVPR) 2014.
 % Please consider citing the paper if you use this code.
 % ------------------------------------------------------------------------
-function root_dir = root_dir()
-if strcmp(computer(), 'GLNXA64')
-    root_dir = fileparts(which(mfilename));
-end
-end
+% Test robustness to empty ucms
+% ------------------------------------------------------------------------
+
+% Empty input image
+I = zeros(40,80);
+
+candidates_scg = im2mcg(I,'fast');
+candidates_mcg = im2mcg(I,'accurate');
