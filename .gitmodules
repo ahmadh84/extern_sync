@@ -16,3 +16,6 @@
 [submodule "segmentation/segments--hariharan_ECCV_2014_detseg"]
 	path = segmentation/segments--hariharan_ECCV_2014_detseg
 	url = https://github.com/bharath272/sds_eccv2014.git
+[submodule "segmentation/segments--hosang_arXiv_2015_proposalssurvey"]
+	path = segmentation/segments--hosang_arXiv_2015_proposalssurvey
+	url = https://github.com/hosang/detection-proposals.git
