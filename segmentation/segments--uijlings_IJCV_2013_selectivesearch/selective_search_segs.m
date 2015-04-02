@@ -27,6 +27,8 @@ function [segs, seg_obj] = selective_search_segs(im_filepath, params)
         params = fast_params();
     elseif ischar(params) && strcmp(params,'quality')
         params = quality_params();
+    else
+        error('Invalid params to Selective Search');
     end
     
     % As an example, use a single image
