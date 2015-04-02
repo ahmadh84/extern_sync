@@ -95,6 +95,7 @@ function [segs, seg_obj] = selective_search_segs(im_filepath, params)
     
     t = tic;
     [bb_boxes, idsGood] = FilterBoxesWidth(bb_boxes, params.minBoxWidth);
+    priority = priority(idsGood);
     cfg_idxs = cfg_idxs(idsGood);
     simfunc_idxs = simfunc_idxs(idsGood);
     order_idxs = order_idxs(idsGood);
@@ -103,6 +104,7 @@ function [segs, seg_obj] = selective_search_segs(im_filepath, params)
     
     t = tic;
     [bb_boxes, uniqueIdx] = BoxRemoveDuplicates(bb_boxes);
+    priority = priority(uniqueIdx);
     cfg_idxs = cfg_idxs(uniqueIdx);
     simfunc_idxs = simfunc_idxs(uniqueIdx);
     order_idxs = order_idxs(uniqueIdx);
@@ -112,6 +114,7 @@ function [segs, seg_obj] = selective_search_segs(im_filepath, params)
     seg_obj.num_segs.FINAL = seg_obj.num_segs.after_repeat_remove;
     
     % store data which can be used to generate segments
+    segs.scores = priority;
     segs.cfg_idxs = cfg_idxs;
     segs.simfunc_idxs = simfunc_idxs;
     segs.order_idxs = order_idxs;
