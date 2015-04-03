@@ -207,7 +207,7 @@ else
     candidates.labels = {1};
 end
 
-seg_obj.num_segs.FINAL = size(cand_labels,1);
+seg_obj.num_segs.final_num_segs = size(cand_labels,1);
 seg_obj.timings.total_seg_time = toc(start_time) - total_load_time;
 seg_obj.preload = preload;
 

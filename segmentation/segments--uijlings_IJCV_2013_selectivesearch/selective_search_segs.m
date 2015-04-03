@@ -12,7 +12,7 @@
 %   Selective Search for Object Recognition,
 %   J.R.R. Uijlings, K.E.A. van de Sande, T. Gevers, A.W.M. Smeulders, IJCV 2013
 %%
-function [segs, seg_obj] = selective_search_segs(im_filepath, params)
+function [segs, seg_obj] = selective_search_segs(im, params)
     root_dir = fileparts(which(mfilename));
     addpath(fullfile(root_dir, 'Dependencies'));
     
@@ -34,17 +34,8 @@ function [segs, seg_obj] = selective_search_segs(im_filepath, params)
     % As an example, use a single image
     % images = {'/home/ahumayun/Dropbox/NFoundSeg/JPEGImages/2008_007998.jpg'};
     % im = imread(images{1});
-
-    im = imread(im_filepath);
-    if ismatrix(im), im = repmat(im, [1 1 3]); end
-
-    [img_dir, img_name] = fileparts(im_filepath);
-    seg_obj.segm_params = params;
-    seg_obj.input_info.img_filepath = im_filepath;
-    seg_obj.input_info.img_dir = img_dir;
-    seg_obj.input_info.img_name = img_name;
     
-    fprintf('Computing object regions for %s\n', img_name);
+    seg_obj.segm_params = params;
     
     num_cfgs = length(params.colorTypes)*numel(params.ks);
     blobIndIm = zeros(size(im,1), size(im,2), num_cfgs);
@@ -111,7 +102,7 @@ function [segs, seg_obj] = selective_search_segs(im_filepath, params)
     seg_obj.num_segs.after_repeat_remove = accumarray(cfg_idxs(:), 1)';
     seg_obj.timings.box_similar_filter_time = toc(t);
 
-    seg_obj.num_segs.FINAL = seg_obj.num_segs.after_repeat_remove;
+    seg_obj.num_segs.final_num_segs = seg_obj.num_segs.after_repeat_remove;
     
     % store data which can be used to generate segments
     segs.scores = priority;
