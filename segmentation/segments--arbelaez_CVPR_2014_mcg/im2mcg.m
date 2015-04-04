@@ -75,16 +75,16 @@ if strcmp(mode,'fast')
     all_ucms = ucm2;
     
     t2 = tic();
+    pareto_n_cands_fp = fullfile(mcg_root, 'datasets', 'models', 'scg_pareto_point_train2012.mat');
     % Load pre-trained pareto point
     if ~isfield(preload, 'pareto_n_cands')
-        preload.pareto_n_cands = ...
-            loadvar(fullfile(mcg_root, 'datasets', 'models', 'scg_pareto_point_train2012.mat'),'n_cands');
+        preload.pareto_n_cands = loadvar(pareto_n_cands_fp, 'n_cands');
     end
 
+    rf_regressor_fp = fullfile(mcg_root, 'datasets', 'models', 'scg_rand_forest_train2012.mat');
     % Load pre-trained random forest regresssor for the ranking of candidates
     if ~isfield(preload, 'rf_regressor')
-        preload.rf_regressor = ...
-            loadvar(fullfile(mcg_root, 'datasets', 'models', 'scg_rand_forest_train2012.mat'),'rf');
+        preload.rf_regressor = loadvar(rf_regressor_fp,'rf');
     end
     total_load_time = toc(t2);
     
@@ -97,15 +97,16 @@ elseif strcmp(mode,'accurate')
     all_ucms = cat(3,ucm2,ucms(:,:,3),ucms(:,:,2),ucms(:,:,1)); % Multi, 0.5, 1, 2
 
     t2 = tic();
+    pareto_n_cands_fp = fullfile(mcg_root, 'datasets', 'models', 'mcg_pareto_point_train2012.mat');
     % Load pre-trained pareto point
     if ~isfield(preload, 'pareto_n_cands')
-        preload.pareto_n_cands = ...
-            loadvar(fullfile(mcg_root, 'datasets', 'models', 'mcg_pareto_point_train2012.mat'),'n_cands');
+        preload.pareto_n_cands = loadvar(pareto_n_cands_fp, 'n_cands');
     end
 
+    rf_regressor_fp = fullfile(mcg_root, 'datasets', 'models', 'mcg_rand_forest_train2012.mat');
     % Load pre-trained random forest regresssor for the ranking of candidates
     if ~isfield(preload, 'rf_regressor')
-        preload.rf_regressor = loadvar(fullfile(mcg_root, 'datasets', 'models', 'mcg_rand_forest_train2012.mat'),'rf');
+        preload.rf_regressor = loadvar(rf_regressor_fp, 'rf');
     end
     total_load_time = toc(t2);
 else
@@ -193,7 +194,8 @@ bboxes = bboxes(new_ids,:);
 seg_obj.timings.max_margin_time = toc(t);
 
 % Filter boxes by overlap
-red_bboxes = mex_box_reduction(bboxes, 0.95);
+J_th_mex_box_red = 0.95;
+red_bboxes = mex_box_reduction(bboxes, J_th_mex_box_red);
 
 % Change the coordinates of bboxes to be coherent with
 % other results from other sources (sel_search, etc.)
@@ -225,3 +227,13 @@ if compute_masks
         candidates.masks = true(size(f_lp));
     end
 end
+
+% storing the parameters
+seg_obj.segm_params = struct;
+seg_obj.segm_params.mode = mode;
+seg_obj.segm_params.J_th = J_th;
+seg_obj.segm_params.J_th_mex_box_red = J_th_mex_box_red;
+seg_obj.segm_params.theta = theta;
+seg_obj.segm_params.scales = scales;
+seg_obj.segm_params.pareto_n_cands_fp = pareto_n_cands_fp;
+seg_obj.segm_params.rf_regressor_fp = rf_regressor_fp;
