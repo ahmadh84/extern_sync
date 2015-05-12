@@ -129,8 +129,6 @@ for ii=1:n_hiers
     ms{ii}            = curr_hier.ms_matrix;
     lps = cat(3, lps, curr_hier.leaves_part);
 end
-% detect empty hierarchies
-empty_hier = cellfun(@isempty, ms);
 seg_obj.timings.ucm_to_hier_time = toc(t);
 
 % Get full cands, represented on a fused hierarchy
@@ -174,7 +172,7 @@ t = tic();
 [feats, bboxes] = compute_full_features(red_cands,b_feats);
 seg_obj.timings.rank_feats_time = toc(t);
 
-% Rank candidates
+% Rank candidates (and sort candidates by scores)
 t = tic();
 class_scores = regRF_predict(feats,preload.rf_regressor);
 [scores, ids] = sort(class_scores,'descend');
@@ -195,7 +193,9 @@ seg_obj.timings.max_margin_time = toc(t);
 
 % Filter boxes by overlap
 J_th_mex_box_red = 0.95;
-red_bboxes = mex_box_reduction(bboxes, J_th_mex_box_red);
+[red_bboxes, ids] = mex_box_reduction(bboxes, J_th_mex_box_red);
+seg_obj.num_segs.after_overlap_remove = size(red_bboxes,1);
+candidates.box_reduction_ids = ids;
 
 % Change the coordinates of bboxes to be coherent with
 % other results from other sources (sel_search, etc.)
@@ -203,8 +203,11 @@ candidates.bboxes = [red_bboxes(:,2) red_bboxes(:,1) red_bboxes(:,4) red_bboxes(
 
 % Get the labels of leave regions that form each candidates
 candidates.superpixels = f_lp;
+candidates.f_ms = f_ms;
+candidates.cand_labels = cand_labels;
 if ~isempty(f_ms)
     candidates.labels = cands2labels(cand_labels,f_ms);
+    assert(numel(candidates.scores) == numel(candidates.labels));
 else
     candidates.labels = {1};
 end
@@ -223,10 +226,16 @@ fprintf('Total time %.2f secs\n', seg_obj.timings.total_seg_time);
 if compute_masks
     if ~isempty(f_ms)
         candidates.masks = cands2masks(cand_labels, f_lp, f_ms);
+        assert(numel(candidates.scores) == size(candidates.masks,3));
     else
         candidates.masks = true(size(f_lp));
     end
 end
+
+% sanity checks
+assert(all(candidates.box_reduction_ids >= 1 & ...
+           candidates.box_reduction_ids <= numel(candidates.scores)));
+assert(numel(candidates.box_reduction_ids) == size(candidates.bboxes,1));
 
 % storing the parameters
 seg_obj.segm_params = struct;

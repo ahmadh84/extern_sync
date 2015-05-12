@@ -57,6 +57,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     
     /* Scan all boxes */
     std::list<std::vector<int> > all_boxes;
+    std::vector<unsigned int> boxes_ind;
     for (std::size_t ii=0; ii<n_boxes; ++ii)
     {
         bool found = 0;
@@ -85,6 +86,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
                 to_put.push_back(boxes[ii][kk]);
 
             all_boxes.push_back(to_put);
+            boxes_ind.push_back(ii);
         }
     }
     
@@ -92,7 +94,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
     std::size_t n_boxes_2 = all_boxes.size();
     plhs[0] = mxCreateDoubleMatrix(n_boxes_2,boxes.shape()[1],mxREAL);
     MatlabMultiArray<double> boxes2(plhs[0]);
-    
+
+    mwSize out_dims[2];
+    out_dims[0] = boxes_ind.size(); out_dims[1] = 1;
+    plhs[1] = mxCreateNumericArray(2, out_dims, mxUINT32_CLASS, mxREAL);
+    unsigned int* outboxes_ind = (unsigned int*)mxGetData(plhs[1]);
+
     /* Fill boxes2 */
     std::size_t curr_pair = 0;
     std::list<std::vector<int> >::iterator list_it = all_boxes.begin();
@@ -105,6 +112,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
             boxes2[curr_pair][curr_reg] = *vec_it2;
             curr_reg++;
         }
+        outboxes_ind[curr_pair] = boxes_ind[curr_pair] + 1;
         curr_pair++;
     }   
 }
