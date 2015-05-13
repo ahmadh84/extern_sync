@@ -1,0 +1,39 @@
+# sampling rate of trajectories (default: 8)
+SAMPLING=${1};
+# regularization weight for segmentation (default: 60)
+NU=${2};
+
+##################
+## RUN TEST SET ##
+##################
+./MoSeg filestructureTestSet.cfg cars1 0 19 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg cars4 0 54 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg cars5 0 36 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg cars10 0 30 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg marple2 0 250 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg marple4 0 43 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg marple6 0 800 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg marple7 0 528 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg marple9 0 123 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg marple12 0 112 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg people1 0 40 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg people2 0 30 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg tennis 0 466 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg camel01 0 100 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg cats01 0 160 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg cats03 0 100 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg cats06 0 331 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg dogs01 0 200 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg dogs02 0 420 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg farm01 0 252 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg goats01 0 280 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg horses02 0 240 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg horses04 0 800 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg horses05 0 456 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg lion01 0 156 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg people03 0 180 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg giraffes01 0 320 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg rabbits02 0 260 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg rabbits03 0 220 ${SAMPLING} ${NU}
+./MoSeg filestructureTestSet.cfg rabbits04 0 300 ${SAMPLING} ${NU}
+

@@ -1,0 +1,37 @@
+# Folder where sparse labels are taken from
+MYFOLDER=${1};
+
+##################
+## RUN TEST SET ##
+##################
+./dens100gpu filestructureTestSetDensify.cfg cars1/image.ppm ${MYFOLDER}/cars1/Tracks19.dat -1 ${MYFOLDER}/cars1/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg cars4/image.ppm ${MYFOLDER}/cars4/Tracks54.dat -1 ${MYFOLDER}/cars4/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg cars5/image.ppm ${MYFOLDER}/cars5/Tracks36.dat -1 ${MYFOLDER}/cars5/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg cars10/image.ppm ${MYFOLDER}/cars10/Tracks30.dat -1 ${MYFOLDER}/cars10/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg marple2/image.ppm ${MYFOLDER}/marple2/Tracks250.dat -1 ${MYFOLDER}/marple2/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg marple4/image.ppm ${MYFOLDER}/marple4/Tracks43.dat -1 ${MYFOLDER}/marple4/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg marple6/image.ppm ${MYFOLDER}/marple6/Tracks800.dat -1 ${MYFOLDER}/marple6/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg marple7/image.ppm ${MYFOLDER}/marple7/Tracks528.dat -1 ${MYFOLDER}/marple7/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg marple9/image.ppm ${MYFOLDER}/marple9/Tracks123.dat -1 ${MYFOLDER}/marple9/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg marple12/image.ppm ${MYFOLDER}/marple12/Tracks112.dat -1 ${MYFOLDER}/marple12/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg people1/image.ppm ${MYFOLDER}/people1/Tracks40.dat -1 ${MYFOLDER}/people1/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg people2/image.ppm ${MYFOLDER}/people2/Tracks30.dat -1 ${MYFOLDER}/people2/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg tennis/image.ppm ${MYFOLDER}/tennis/Tracks466.dat -1 ${MYFOLDER}/tennis/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg camel01/image.ppm ${MYFOLDER}/camel01/Tracks100.dat -1 ${MYFOLDER}/camel01/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg cats01/image.ppm ${MYFOLDER}/cats01/Tracks160.dat -1 ${MYFOLDER}/cats01/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg cats03/image.ppm ${MYFOLDER}/cats03/Tracks100.dat -1 ${MYFOLDER}/cats03/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg cats06/image.ppm ${MYFOLDER}/cats06/Tracks331.dat -1 ${MYFOLDER}/cats06/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg dogs01/image.ppm ${MYFOLDER}/dogs01/Tracks200.dat -1 ${MYFOLDER}/dogs01/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg dogs02/image.ppm ${MYFOLDER}/dogs02/Tracks420.dat -1 ${MYFOLDER}/dogs02/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg farm01/image.ppm ${MYFOLDER}/farm01/Tracks252.dat -1 ${MYFOLDER}/farm01/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg goats01/image.ppm ${MYFOLDER}/goats01/Tracks280.dat -1 ${MYFOLDER}/goats01/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg horses02/image.ppm ${MYFOLDER}/horses02/Tracks240.dat -1 ${MYFOLDER}/horses02/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg horses04/image.ppm ${MYFOLDER}/horses04/Tracks800.dat -1 ${MYFOLDER}/horses04/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg horses05/image.ppm ${MYFOLDER}/horses05/Tracks456.dat -1 ${MYFOLDER}/horses05/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg lion01/image.ppm ${MYFOLDER}/lion01/Tracks156.dat -1 ${MYFOLDER}/lion01/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg people03/image.ppm ${MYFOLDER}/people03/Tracks180.dat -1 ${MYFOLDER}/people03/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg giraffes01/image.ppm ${MYFOLDER}/giraffes01/Tracks320.dat -1 ${MYFOLDER}/giraffes01/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg rabbits02/image.ppm ${MYFOLDER}/rabbits02/Tracks260.dat -1 ${MYFOLDER}/rabbits02/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg rabbits03/image.ppm ${MYFOLDER}/rabbits03/Tracks220.dat -1 ${MYFOLDER}/rabbits03/DenseSegmentation
+./dens100gpu filestructureTestSetDensify.cfg rabbits04/image.ppm ${MYFOLDER}/rabbits04/Tracks300.dat -1 ${MYFOLDER}/rabbits04/DenseSegmentation
+

@@ -1,0 +1,38 @@
+# sampling rate of trajectories (default: 8)
+SAMPLING=${1};
+# regularization weight for segmentation (default: 60)
+NU=${2};
+
+######################
+## RUN TRAINING SET ##
+######################
+./MoSeg filestructureTrainingSet.cfg cars2 0 30 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg cars3 0 19 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg cars6 0 30 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg cars7 0 24 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg cars8 0 24 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg cars9 0 60 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg marple1 0 328 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg marple3 0 323 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg marple5 0 94 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg marple8 0 72 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg marple10 0 460 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg marple11 0 173 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg marple13 0 75 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg bear01 0 100 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg bear02 0 458 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg cats02 0 120 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg cats04 0 98 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg cats05 0 87 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg cats07 0 193 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg ducks01 0 400 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg horses01 0 500 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg horses03 0 240 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg horses06 0 720 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg lion02 0 416 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg meerkats01 0 220 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg people04 0 320 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg people05 0 260 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg rabbits01 0 290 ${SAMPLING} ${NU}
+./MoSeg filestructureTrainingSet.cfg rabbits05 0 420 ${SAMPLING} ${NU}
+

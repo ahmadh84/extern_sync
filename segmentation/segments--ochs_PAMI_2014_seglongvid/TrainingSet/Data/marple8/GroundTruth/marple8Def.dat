@@ -1,0 +1,62 @@
+Ground truth definition file; do not change!
+
+Total number of regions:
+3
+Scale of region 0:
+0
+Scale of region 1:
+255
+Scale of region 2:
+128
+
+Confusion penality matrix:
+0 1 1
+1 0 1
+1 1 0
+
+Total number of frames in this shot:
+72
+Total number of labeled frames for this shot:
+7
+Frame number:
+0
+File name:
+marple8_01.pgm
+Input file name:
+marple8_01.ppm
+Frame number:
+9
+File name:
+marple8_10.pgm
+Input file name:
+marple8_10.ppm
+Frame number:
+19
+File name:
+marple8_20.pgm
+Input file name:
+marple8_20.ppm
+Frame number:
+29
+File name:
+marple8_30.pgm
+Input file name:
+marple8_30.ppm
+Frame number:
+39
+File name:
+marple8_40.pgm
+Input file name:
+marple8_40.ppm
+Frame number:
+49
+File name:
+marple8_50.pgm
+Input file name:
+marple8_50.ppm
+Frame number:
+71
+File name:
+marple8_72.pgm
+Input file name:
+marple8_72.ppm

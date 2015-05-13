@@ -1,0 +1,43 @@
+###########################
+## EVALUATE TRAINING SET ##
+###########################
+
+# root folder where results are located
+METHOD_FOLDER=${1};
+# filename (with relative path) for the evaluation file
+EVAL_FILENAME=${2};
+
+# collect tracks
+echo "TrainingSet/Results/${METHOD_FOLDER}/cars2/DenseSegmentation/Tracks30.dat" > ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/cars3/DenseSegmentation/Tracks19.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/cars6/DenseSegmentation/Tracks30.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/cars7/DenseSegmentation/Tracks24.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/cars8/DenseSegmentation/Tracks24.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/cars9/DenseSegmentation/Tracks60.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/marple1/DenseSegmentation/Tracks328.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/marple3/DenseSegmentation/Tracks323.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/marple5/DenseSegmentation/Tracks94.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/marple8/DenseSegmentation/Tracks72.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/marple10/DenseSegmentation/Tracks460.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/marple11/DenseSegmentation/Tracks173.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/marple13/DenseSegmentation/Tracks75.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/bear01/DenseSegmentation/Tracks100.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/bear02/DenseSegmentation/Tracks458.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/cats02/DenseSegmentation/Tracks120.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/cats04/DenseSegmentation/Tracks98.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/cats05/DenseSegmentation/Tracks87.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/cats07/DenseSegmentation/Tracks193.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/ducks01/DenseSegmentation/Tracks400.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/horses01/DenseSegmentation/Tracks500.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/horses03/DenseSegmentation/Tracks240.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/horses06/DenseSegmentation/Tracks720.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/lion02/DenseSegmentation/Tracks416.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/meerkats01/DenseSegmentation/Tracks220.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/people04/DenseSegmentation/Tracks320.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/people05/DenseSegmentation/Tracks260.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/rabbits01/DenseSegmentation/Tracks290.dat" >> ${EVAL_FILENAME};
+echo "TrainingSet/Results/${METHOD_FOLDER}/rabbits05/DenseSegmentation/Tracks420.dat" >> ${EVAL_FILENAME};
+
+# run evaluation
+./MoSegEvalAllPR allShotsTrainingSet.txt all ${EVAL_FILENAME} 0.75;
+
