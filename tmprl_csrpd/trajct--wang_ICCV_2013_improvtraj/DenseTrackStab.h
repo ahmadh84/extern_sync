@@ -23,10 +23,14 @@
 #include "opencv2/core/core.hpp"
 #include "opencv2/nonfree/nonfree.hpp"
 
+#include <boost/format.hpp>
+
 using namespace cv;
 
 int start_frame = 0;
 int end_frame = INT_MAX;
+bool is_video = true;
+int show_track = 0; // set show_track = 1, if you want to visualize the trajectories
 int scale_num = 8;
 const float scale_stride = sqrt(2);
 char* bb_file = NULL;

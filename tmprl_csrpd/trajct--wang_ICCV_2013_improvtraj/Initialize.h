@@ -42,19 +42,27 @@ void InitDescInfo(DescInfo* descInfo, int nBins, bool isHof, int size, int nxy_c
 	descInfo->width = size;
 }
 
-void InitSeqInfo(SeqInfo* seqInfo, char* video)
+void InitSeqInfo(SeqInfo* seqInfo, char* input_path)
 {
 	VideoCapture capture;
-	capture.open(video);
+	if (is_video) {
+		capture.open(input_path);
 
-	if(!capture.isOpened())
-		fprintf(stderr, "Could not initialize capturing..\n");
+		if(!capture.isOpened())
+			fprintf(stderr, "Could not initialize capturing..\n");
+	}
 
 	// get the number of frames in the video
 	int frame_num = 0;
 	while(true) {
 		Mat frame;
-		capture >> frame;
+		if (is_video) {
+			capture >> frame;
+		} else {
+			std::string im_filename = (boost::format(input_path) % (frame_num + start_frame)).str();
+			//printf("Reading input seq %s\n", im_filename.c_str());
+			frame = imread(im_filename);
+		}
 
 		if(frame.empty())
 			break;
@@ -65,6 +73,10 @@ void InitSeqInfo(SeqInfo* seqInfo, char* video)
 		}
 
 		frame_num++;
+
+		// if image sequence, stop reading as soon as we get to the last frame
+		if (!is_video && frame_num + start_frame > end_frame)
+			break;
     }
 	seqInfo->length = frame_num;
 }
@@ -75,6 +87,10 @@ void usage()
 	fprintf(stderr, "Usage: DenseTrackStab video_file [options]\n");
 	fprintf(stderr, "Options:\n");
 	fprintf(stderr, "  -h                        Display this message and exit\n");
+	fprintf(stderr, "  -i                        In case you want to give an image sequence rather than a video, e.g.\n"
+	                "                            /datasets/myvideo/frame_%05d.jpg -i -S 0 -E 10\n"
+	                "                            (it is necessary to give the start and end frame with this option)\n");
+	fprintf(stderr, "  -v                        To visualize results\n");
 	fprintf(stderr, "  -S [start frame]          The start frame to compute feature (default: S=0 frame)\n");
 	fprintf(stderr, "  -E [end frame]            The end frame for feature computing (default: E=last frame)\n");
 	fprintf(stderr, "  -L [trajectory length]    The length of the trajectory (default: L=15 frames)\n");
@@ -92,8 +108,14 @@ bool arg_parse(int argc, char** argv)
 	int c;
 	bool flag = false;
 	char* executable = basename(argv[0]);
-	while((c = getopt (argc, argv, "hS:E:L:W:N:s:t:A:I:H:")) != -1)
+	while((c = getopt (argc, argv, "ivhS:E:L:W:N:s:t:A:I:H:")) != -1)
 	switch(c) {
+		case 'i':
+		is_video = false;
+		break;
+		case 'v':
+		show_track = 1;
+		break;
 		case 'S':
 		start_frame = atoi(optarg);
 		flag = true;
@@ -133,6 +155,10 @@ bool arg_parse(int argc, char** argv)
 
 		default:
 		fprintf(stderr, "error parsing arguments at -%c\n  Try '%s -h' for help.", c, executable );
+		abort();
+	}
+	if (!is_video && (!flag || end_frame == INT_MAX)) {
+		fprintf(stderr, "You need to specify the start and end frame when using an image sequence.");
 		abort();
 	}
 	return flag;

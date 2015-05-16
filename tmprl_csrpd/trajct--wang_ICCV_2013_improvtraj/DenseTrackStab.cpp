@@ -7,17 +7,25 @@
 
 using namespace cv;
 
-int show_track = 0; // set show_track = 1, if you want to visualize the trajectories
 
 int main(int argc, char** argv)
 {
 	VideoCapture capture;
-	char* video = argv[1];
+	char* input_path = argv[1];
 	int flag = arg_parse(argc, argv);
-	capture.open(video);
+	bool success_open = false;
+	if (is_video) {
+		capture.open(input_path);
+		success_open = capture.isOpened();
+	} else {
+		std::string im_filename = (boost::format(input_path) % start_frame).str();
+		//printf("Reading input seq %s\n", im_filename.c_str());
+		Mat tmp = imread(im_filename);
+		success_open = !tmp.empty();
+	}
 
-	if(!capture.isOpened()) {
-		fprintf(stderr, "Could not initialize capturing..\n");
+	if (!success_open) {
+		fprintf(stderr, "Could not open the input sequence..\n");
 		return -1;
 	}
 
@@ -31,7 +39,7 @@ int main(int argc, char** argv)
 	InitDescInfo(&mbhInfo, 8, false, patch_size, nxy_cell, nt_cell);
 
 	SeqInfo seqInfo;
-	InitSeqInfo(&seqInfo, video);
+	InitSeqInfo(&seqInfo, input_path);
 
 	std::vector<Frame> bb_list;
 	if(bb_file) {
@@ -41,6 +49,10 @@ int main(int argc, char** argv)
 
 	if(flag)
 		seqInfo.length = end_frame - start_frame + 1;
+
+	// if image sequence, start with the right image number
+	if (!is_video)
+		frame_num = start_frame;
 
 //	fprintf(stderr, "video size, length: %d, width: %d, height: %d\n", seqInfo.length, seqInfo.width, seqInfo.height);
 
@@ -73,7 +85,13 @@ int main(int argc, char** argv)
 		int i, j, c;
 
 		// get a new frame
-		capture >> frame;
+		if (is_video) {
+			capture >> frame;
+		} else {
+			std::string im_filename = (boost::format(input_path) % frame_num).str();
+			//printf("Reading input seq %s\n", im_filename.c_str());
+			frame = imread(im_filename);
+		}
 		if(frame.empty())
 			break;
 
