@@ -91,6 +91,7 @@ void usage()
 	                "                            /datasets/myvideo/frame_%05d.jpg -i -S 0 -E 10\n"
 	                "                            (it is necessary to give the start and end frame with this option)\n");
 	fprintf(stderr, "  -v                        To visualize results\n");
+	fprintf(stderr, "  -p                        Rather than printing displacements, this outputs point trajectories\n");
 	fprintf(stderr, "  -S [start frame]          The start frame to compute feature (default: S=0 frame)\n");
 	fprintf(stderr, "  -E [end frame]            The end frame for feature computing (default: E=last frame)\n");
 	fprintf(stderr, "  -L [trajectory length]    The length of the trajectory (default: L=15 frames)\n");
@@ -108,13 +109,16 @@ bool arg_parse(int argc, char** argv)
 	int c;
 	bool flag = false;
 	char* executable = basename(argv[0]);
-	while((c = getopt (argc, argv, "ivhS:E:L:W:N:s:t:A:I:H:")) != -1)
+	while((c = getopt (argc, argv, "ivphS:E:L:W:N:s:t:A:I:H:")) != -1)
 	switch(c) {
 		case 'i':
 		is_video = false;
 		break;
 		case 'v':
 		show_track = 1;
+		break;
+		case 'p':
+		out_pointtrajs = true;
 		break;
 		case 'S':
 		start_frame = atoi(optarg);

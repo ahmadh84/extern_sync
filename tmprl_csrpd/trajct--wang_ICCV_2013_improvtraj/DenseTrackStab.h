@@ -29,8 +29,9 @@ using namespace cv;
 
 int start_frame = 0;
 int end_frame = INT_MAX;
-bool is_video = true;
-int show_track = 0; // set show_track = 1, if you want to visualize the trajectories
+bool is_video = true;           // tells if the input is a video or a image/frame sequence
+bool out_pointtrajs = false;    // decides whether displacements OR point trajectories are output
+int show_track = 0;             // set show_track = 1, if you want to visualize the trajectories
 int scale_num = 8;
 const float scale_stride = sqrt(2);
 char* bb_file = NULL;

@@ -241,8 +241,10 @@ int main(int argc, char** argv)
 				// if the trajectory achieves the maximal length
 				if(iTrack->index >= trackInfo.length) {
 					std::vector<Point2f> trajectory(trackInfo.length+1);
-					for(int i = 0; i <= trackInfo.length; ++i)
-						trajectory[i] = iTrack->point[i]*fscales[iScale];
+					std::vector<Point2f> pnt_trajectory(trackInfo.length+1);
+					for(int i = 0; i <= trackInfo.length; ++i) {
+						pnt_trajectory[i] = trajectory[i] = iTrack->point[i]*fscales[iScale];
+					}
 				
 					std::vector<Point2f> displacement(trackInfo.length);
 					for (int i = 0; i < trackInfo.length; ++i)
@@ -259,8 +261,13 @@ int main(int argc, char** argv)
 						printf("%f\t", std::min<float>(std::max<float>((frame_num - trackInfo.length/2.0 - start_frame)/float(seqInfo.length), 0), 0.999));
 					
 						// output the trajectory
-						for (int i = 0; i < trackInfo.length; ++i)
-							printf("%f\t%f\t", displacement[i].x, displacement[i].y);
+						if (out_pointtrajs) {
+							for (int i = 0; i <= trackInfo.length; ++i)
+								printf("%f\t%f\t", pnt_trajectory[i].x, pnt_trajectory[i].y);
+						} else {
+							for (int i = 0; i < trackInfo.length; ++i)
+								printf("%f\t%f\t", displacement[i].x, displacement[i].y);
+						}
 		
 						PrintDesc(iTrack->hog, hogInfo, trackInfo);
 						PrintDesc(iTrack->hof, hofInfo, trackInfo);
