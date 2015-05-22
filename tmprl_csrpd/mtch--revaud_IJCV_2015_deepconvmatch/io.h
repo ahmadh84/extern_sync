@@ -21,10 +21,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #include "image.h"
 #include "deep_matching.h"
 
+#include "opencv2/core/core.hpp"
+#include "opencv2/highgui/highgui.hpp"
+
+
 // output correspondences to a file or on the stdout
-void output_correspondences( const char* out_filename, const corres_t* corres, int nb, float fx, float fy );
+void output_correspondences( FILE* const fd, const corres_t* corres, 
+					         int nb, float fx, float fy, const bool binary=false );
 
 /* load a color image from a file */
 color_image_t *color_image_load(const char *fname);
+
+/* convert opencv mat to color_image_t */
+color_image_t *cvmat_to_color_im(const cv::Mat& im_mat);
+
+/* convert opencv mat to grayscale image_t (similar to image_gray_from_color()) 
+   If a non-NULL im_t is given, it is used for the output grayscale image, rather 
+   than allocating new memory for the image */
+image_t *cvmat_to_gray_im(const cv::Mat& im_mat, image_t* im_t=NULL);
 
 #endif

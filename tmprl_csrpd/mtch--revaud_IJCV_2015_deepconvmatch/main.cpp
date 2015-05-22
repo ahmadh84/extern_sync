@@ -24,6 +24,7 @@ void usage()
   #define p(msg)  printf(msg "\n");
   p("usage:");
   p("./deepmatching image1 image2 [options]");
+  p("./deepmatching -i video [options]");
   p("Compute the 'DeepMatching' between two images and print a list of")
   p("pair-wise point correspondences:")
   p("  x1 y1 x2 y2 score index ...")
@@ -65,6 +66,8 @@ void usage()
   p("    -v                         increase verbosity")
   p("    -nt <n>                    multi-threading with <n> threads")
   p("    -out <file_name>           output correspondences in a file")
+  p("    -b                         writes a binary output file")
+  p("    -k <# skip>                number of frames to skip while processing video")
   exit(1);
 }
 
@@ -85,34 +88,29 @@ image_t* rescale_image( image_t* im, int width, int height )
   return res;
 }
 
+
+float_image* compute_match_ims(image_t *im1, image_t *im2, dm_params_t& params, scalerot_params_t& sr_params, bool& use_scalerot) 
+{  
+  if( !use_scalerot && params.subsample_ref && 
+      (!ispowerof2(im1->width) || !ispowerof2(im1->height)) )
+    fprintf(stderr, "WARNING: first image has dimension which are not power-of-2\nFor improved results, you should consider resizing the images with '-resize <w> <h>'");
+  
+  // compute deep matching
+  float_image* corres = use_scalerot ? 
+         deep_matching_scale_rot( im1, im2, &params, &sr_params ) : 
+         deep_matching          ( im1, im2, &params, NULL );  // standard call
+  
+  return corres;
+}
+
 int main(int argc, const char ** argv)
 {
   if( argc<=2 || !strcmp(argv[1],"-h") || !strcmp(argv[1],"--help") )  usage(); 
   
+  int current_arg = 3;
   // load images
   image_t *im1=NULL, *im2=NULL;
-  int current_arg = 3;
-  {
-    color_image_t *cim1 = color_image_load(argv[1]);
-    color_image_t *cim2 = color_image_load(argv[2]);
-    
-    // always use -jpg_settings by default, 
-    // since -png_settings is hardly better even for uncompressed image
-    //if( endswith(argv[1],"png") || endswith(argv[1],"PNG") )
-    //  argv[--current_arg] = "-png_settings";  // set default
-    //if( endswith(argv[1],"ppm") || endswith(argv[1],"PPM") )
-    //  argv[--current_arg] = "-png_settings";  // set default
-    //if( endswith(argv[1],"jpg") || endswith(argv[1],"JPG") )
-    //  argv[--current_arg] = "-jpg_settings";  // set default
-    //if( endswith(argv[1],"jpeg") || endswith(argv[1],"JPEG") )
-    //  argv[--current_arg] = "-jpg_settings";  // set default
-    
-    im1 = image_gray_from_color(cim1);
-    im2 = image_gray_from_color(cim2);
-    color_image_delete(cim1);
-    color_image_delete(cim2);
-  }
-  
+
   // set params to default
   dm_params_t params;
   set_default_dm_params(&params);
@@ -121,7 +119,11 @@ int main(int argc, const char ** argv)
   bool use_scalerot = false;
   const char* out_filename = NULL;
   float fx=1, fy=1;
-  
+  bool do_resize = false;
+  int rsz_width = -1, rsz_height = -1;
+  bool write_binary_file = false;
+  int skip_frames = 0;
+
   // parse options
   while(current_arg < argc)
   {
@@ -210,63 +212,180 @@ int main(int argc, const char ** argv)
       assert( sr_params.min_rot < sr_params.max_rot );
   // other parameters
     }else if(isarg("-resize")) {
-      assert(im1->width==im2->width && im1->height==im2->height);
-      int width = atoi(argv[current_arg++]);
-      int height = atoi(argv[current_arg++]);
-      fx *= im1->width / float(width);
-      fy *= im1->height / float(height);
-      im1 = rescale_image(im1, width, height);
-      im2 = rescale_image(im2, width, height);
+      do_resize = true;
+      rsz_width = atoi(argv[current_arg++]);
+      rsz_height = atoi(argv[current_arg++]);
     }else if(isarg("-v"))
       params.verbose++;
     else if(isarg("-nt"))
       params.n_thread = atoi(argv[current_arg++]);
     else if(isarg("-out"))
       out_filename = argv[current_arg++];
+    else if(isarg("-b"))
+      write_binary_file = true;
+    else if(isarg("-k"))
+      skip_frames = atoi(argv[current_arg++]);
     else {
       fprintf(stderr,"error: unexpected parameter '%s'", a);
       exit(-1);
     }
   }
-  
-  if( !use_scalerot && params.subsample_ref && 
-      (!ispowerof2(im1->width) || !ispowerof2(im1->height)) )
-    fprintf(stderr, "WARNING: first image has dimension which are not power-of-2\nFor improved results, you should consider resizing the images with '-resize <w> <h>'");
-  
-  // compute deep matching
-  float_image* corres = use_scalerot ? 
-         deep_matching_scale_rot( im1, im2, &params, &sr_params ) : 
-         deep_matching          ( im1, im2, &params, NULL );  // standard call
-  
-  // save result
-  output_correspondences( out_filename, (corres_t*)corres->pixels, corres->ty, fx, fy );
-  
-  free_image(corres);
+
+  // write to stdout by default
+  FILE* out_fd = stdout; 
+
+  // if filename passed, create and open it
+  if (out_filename) {
+      // open file (in binary if needed)
+      if (write_binary_file) {
+        out_fd = fopen(out_filename,"wb");
+      } else {
+        out_fd = fopen(out_filename,"w");
+      }
+  }
+
+  // if passed two images
+  if (strcmp(argv[1], "-i") != 0)
+  {
+    color_image_t *cim1 = color_image_load(argv[1]);
+    color_image_t *cim2 = color_image_load(argv[2]);
+    
+    // always use -jpg_settings by default, 
+    // since -png_settings is hardly better even for uncompressed image
+    //if( endswith(argv[1],"png") || endswith(argv[1],"PNG") )
+    //  argv[--current_arg] = "-png_settings";  // set default
+    //if( endswith(argv[1],"ppm") || endswith(argv[1],"PPM") )
+    //  argv[--current_arg] = "-png_settings";  // set default
+    //if( endswith(argv[1],"jpg") || endswith(argv[1],"JPG") )
+    //  argv[--current_arg] = "-jpg_settings";  // set default
+    //if( endswith(argv[1],"jpeg") || endswith(argv[1],"JPEG") )
+    //  argv[--current_arg] = "-jpg_settings";  // set default
+    
+    im1 = image_gray_from_color(cim1);
+    im2 = image_gray_from_color(cim2);
+    color_image_delete(cim1);
+    color_image_delete(cim2);
+
+    if (do_resize) {
+      assert(im1->width==im2->width && im1->height==im2->height);
+      fx *= im1->width / float(rsz_width);
+      fy *= im1->height / float(rsz_height);
+      im1 = rescale_image(im1, rsz_width, rsz_height);
+      im2 = rescale_image(im2, rsz_width, rsz_height);
+    }
+
+    float_image* corres = compute_match_ims(im1, im2, params, sr_params, use_scalerot);
+    // save result
+    output_correspondences( out_fd, (corres_t*)corres->pixels, corres->ty, fx, fy, write_binary_file );
+    
+    free_image(corres);
+  } else {
+    /* in case a video was passed as input */
+    cv::Mat frame1, frame2;
+
+    // try to open the video for reading
+    cv::VideoCapture capture;
+    capture.open(argv[2]);
+
+    if (!capture.isOpened()) {
+      fprintf(stderr, "Could not open the input sequence..\n");
+      return -1;
+    }
+
+    // get number of frames
+    const int num_frames = capture.get(CV_CAP_PROP_FRAME_COUNT);
+    // write header (# frames, # skip frames) to file/stdout
+    if (write_binary_file) {
+      fwrite(&num_frames, sizeof(int), 1, out_fd);
+      fwrite(&skip_frames, sizeof(int), 1, out_fd);
+    } else {
+      fprintf(out_fd, "%d %d\n", num_frames, skip_frames);
+    }
+
+    // read the first frame
+    capture >> frame1;
+    if (frame1.empty()) {
+      fprintf(stderr, "Was not able to read any frames..\n");
+      return -1;
+    }
+
+    // convert the first frame to grayscale (also allocated mem for im1)
+    im1 = cvmat_to_gray_im(frame1);
+
+    // resize if needed
+    if (do_resize) {
+      fx *= im1->width / float(rsz_width);
+      fy *= im1->height / float(rsz_height);
+      // im1's memory would be reallocated
+      im1 = rescale_image(im1, rsz_width, rsz_height);
+    }
+
+    // allocate memory for im2
+    // if resizing, new memory is allocated on each iteration
+    if (!do_resize) {
+      im2 = image_new(frame1.cols, frame1.rows);
+    }
+
+    int frame_no = 0;
+
+    // loop till all the frames are process
+    while (true) {
+      // read the next frames (and compute matches with previous frame)
+      capture >> frame2;
+
+      // quit when no more frames to read in video
+      if(frame2.empty())
+        break;
+
+      // convert this frame to grayscale as well
+      if (do_resize) {
+        // if resizing, allocate new memory, because the old im2 has already 
+        // been resized to a different sized memory
+        im2 = cvmat_to_gray_im(frame2);
+      } else {
+        // reuse memory
+        cvmat_to_gray_im(frame2, im2);
+      }
+
+      // resize if needed
+      if (do_resize) {
+        // im2's memory would be reallocated
+        im2 = rescale_image(im2, rsz_width, rsz_height);
+      }
+
+      // compute correspendence with previous frame
+      float_image* corres = compute_match_ims(im1, im2, params, sr_params, use_scalerot);
+
+      // add frame number
+      if (write_binary_file) {
+        fwrite(&frame_no, sizeof(int), 1, out_fd);
+      } else {
+        fprintf(out_fd, "%d\n", frame_no);
+      }
+
+      // save result
+      output_correspondences( out_fd, (corres_t*)corres->pixels, corres->ty, 
+                              fx, fy, write_binary_file );
+      
+      // swap frames so that we don't need to allocate new memory in next iteration
+      image_t *tmp = im1;
+      im1 = im2;
+      im2 = tmp;
+
+      free_image(corres);
+
+      ++frame_no;
+    }
+
+    assert( frame_no+1 == num_frames );
+  }
+
+  // close file if one was created
+  if(out_filename)
+    fclose(out_fd);
+
   image_delete(im1);
   image_delete(im2);
+
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

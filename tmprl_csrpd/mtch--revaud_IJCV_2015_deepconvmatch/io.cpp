@@ -21,17 +21,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #include "io.h"
 
 
-void output_correspondences( const char* out_filename, const corres_t* corres, int nb, float fx, float fy ) 
+void output_correspondences( FILE* const fd, const corres_t* corres, 
+                             int nb, float fx, float fy, const bool binary )
 {
   assert(0<fx && fx<=2);
   assert(0<fy && fy<=2);
-  FILE* f = out_filename ? fopen(out_filename,"w") : stdout;
+  // write number of matches
+  if (binary) {
+    fwrite(&nb, sizeof(int), 1, fd);
+  } else {
+    fprintf(fd, "%d\n", nb);
+  }
   for(int i=0; i<nb; i++) {
     const corres_t* r = corres + i; // one row
-    fprintf(f, "%g %g %g %g %g %g\n",fx*r->x0,fy*r->y0,fx*r->x1,fy*r->y1,r->maxima,r->score);
+    if (binary) {
+        float tmp[6] = {fx*r->x0, fy*r->y0, fx*r->x1, fy*r->y1, r->maxima, r->score};
+        fwrite(&tmp[0], sizeof(float), 6, fd);
+    } else {
+        fprintf(fd, "%g %g %g %g %g %g\n",fx*r->x0,fy*r->y0,fx*r->x1,fy*r->y1,r->maxima,r->score);
+    }
   }
-  if(out_filename)
-    fclose(f);
 }
 
 /* IMAGE */
@@ -370,29 +379,38 @@ color_image_t *color_image_load(const char *fname)
     return image;
 }
 
+/* convert opencv mat to color_image_t */
+color_image_t *cvmat_to_color_im(const cv::Mat& im_mat)
+{
+    color_image_t* im_mat_ci = color_image_new(im_mat.cols, im_mat.rows);
+  
+    int idx = 0;
+    for(int j = 0; j < im_mat.rows; ++j) {
+        for(int i = 0; i < im_mat.cols; ++i, ++idx) {
+            im_mat_ci->c1[idx] = (float)im_mat.at<cv::Vec3b>(j, i)[2];
+            im_mat_ci->c2[idx] = (float)im_mat.at<cv::Vec3b>(j, i)[1];
+            im_mat_ci->c3[idx] = (float)im_mat.at<cv::Vec3b>(j, i)[0];
+        }
+    }
 
+    return im_mat_ci;
+}
 
+image_t *cvmat_to_gray_im(const cv::Mat& im_mat, image_t* im_t)
+{
+    // use the user's passed pointer - and if not given, create a new one
+    image_t* im_mat_gi = im_t;
+    if (im_mat_gi == NULL)
+        im_mat_gi = image_new(im_mat.cols, im_mat.rows);
 
+    int idx = 0;
+    for(int j = 0; j < im_mat.rows; ++j) {
+        for(int i = 0; i < im_mat.cols; ++i, ++idx) {
+            im_mat_gi->data[i+j*im_mat_gi->stride] = ((float)im_mat.at<cv::Vec3b>(j, i)[0] + 
+                                                      (float)im_mat.at<cv::Vec3b>(j, i)[1] + 
+                                                      (float)im_mat.at<cv::Vec3b>(j, i)[2]) / 3;
+        }
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return im_mat_gi;
+}
