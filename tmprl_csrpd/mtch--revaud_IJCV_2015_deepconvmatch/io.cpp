@@ -35,8 +35,10 @@ void output_correspondences( FILE* const fd, const corres_t* corres,
   for(int i=0; i<nb; i++) {
     const corres_t* r = corres + i; // one row
     if (binary) {
-        float tmp[6] = {fx*r->x0, fy*r->y0, fx*r->x1, fy*r->y1, r->maxima, r->score};
-        fwrite(&tmp[0], sizeof(float), 6, fd);
+        unsigned short tmp[4] = {fx*r->x0, fy*r->y0, fx*r->x1, fy*r->y1};
+        fwrite(&tmp[0], sizeof(unsigned short), 4, fd);
+        fwrite(&r->maxima, sizeof(float), 1, fd);
+        fwrite(&r->score, sizeof(float), 1, fd);
     } else {
         fprintf(fd, "%g %g %g %g %g %g\n",fx*r->x0,fy*r->y0,fx*r->x1,fy*r->y1,r->maxima,r->score);
     }

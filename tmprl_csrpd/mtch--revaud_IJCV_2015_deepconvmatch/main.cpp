@@ -244,6 +244,8 @@ int main(int argc, const char ** argv)
       }
   }
 
+  assert(out_fd != NULL && "Unable to open file for writing");
+
   // if passed two images
   if (strcmp(argv[1], "-i") != 0)
   {
@@ -267,7 +269,8 @@ int main(int argc, const char ** argv)
     color_image_delete(cim2);
 
     if (do_resize) {
-      assert(im1->width==im2->width && im1->height==im2->height);
+      assert(im1->width==im2->width && im1->height==im2->height && 
+             "Size of two images should be consistent if resizing");
       fx *= im1->width / float(rsz_width);
       fy *= im1->height / float(rsz_height);
       im1 = rescale_image(im1, rsz_width, rsz_height);
@@ -287,10 +290,7 @@ int main(int argc, const char ** argv)
     cv::VideoCapture capture;
     capture.open(argv[2]);
 
-    if (!capture.isOpened()) {
-      fprintf(stderr, "Could not open the input sequence..\n");
-      return -1;
-    }
+    assert(capture.isOpened() && "Could not open the input sequence");
 
     // get number of frames
     const int num_frames = capture.get(CV_CAP_PROP_FRAME_COUNT);
@@ -304,10 +304,7 @@ int main(int argc, const char ** argv)
 
     // read the first frame
     capture >> frame1;
-    if (frame1.empty()) {
-      fprintf(stderr, "Was not able to read any frames..\n");
-      return -1;
-    }
+    assert(!frame1.empty() && "Was not able to read any frames..\n");
 
     // convert the first frame to grayscale (also allocated mem for im1)
     im1 = cvmat_to_gray_im(frame1);
@@ -326,16 +323,31 @@ int main(int argc, const char ** argv)
       im2 = image_new(frame1.cols, frame1.rows);
     }
 
-    int frame_no = 0;
+    int frame_no = 1;
+    bool keep_running = true;
 
     // loop till all the frames are process
-    while (true) {
+    while (keep_running) {
+      // skip frame as needed
+      for (int i=0; i < skip_frames; ++i) {
+        capture >> frame2;
+        if(frame2.empty()) {
+          keep_running = false;
+          continue;
+        }
+        ++frame_no;
+      }
+
       // read the next frames (and compute matches with previous frame)
       capture >> frame2;
 
       // quit when no more frames to read in video
-      if(frame2.empty())
-        break;
+      if(frame2.empty()) {
+        keep_running = false;
+        continue;
+      }
+
+      fprintf(stderr, "Matching: %d -> %d\n", frame_no-skip_frames-1, frame_no);
 
       // convert this frame to grayscale as well
       if (do_resize) {
@@ -377,7 +389,8 @@ int main(int argc, const char ** argv)
       ++frame_no;
     }
 
-    assert( frame_no+1 == num_frames );
+    assert(frame_no == num_frames &&
+           "Number of frames read is not consistent with cv::VideoCapture");
   }
 
   // close file if one was created
