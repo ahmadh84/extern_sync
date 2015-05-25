@@ -113,7 +113,7 @@ image_t* image_gray_from_color( color_image_t* img )
   int n=0;
   for(int j=0; j<img->height; j++)
     for(int i=0; i<img->width; i++,n++)
-      res->data[i+j*res->stride] = (img->c1[n] + img->c2[n] + img->c3[n])/3;
+    res->data[i+j*res->stride] = (img->c1[n] + img->c2[n] + img->c3[n])/3;
   
   return res;
 }

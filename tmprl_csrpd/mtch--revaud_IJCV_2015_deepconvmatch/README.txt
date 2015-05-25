@@ -5,9 +5,9 @@ Code and idea by Jerome Revaud, INRIA. The code is only for scientific
 or personnal use. Please contact me/INRIA for commercial use.
 Email: jerome.revaud@inria.fr
 
-Copyright (C) 2014 Jerome Revaud
+Copyright (C) 2015 Jerome Revaud
 
-Version 1.1
+Version 1.2
 
 License:
 
@@ -29,21 +29,27 @@ Installation:
   
   make clean all
   
-  This program has been built on a fedora18 x64 machine. *No assistance* will be given to 
-  compile the code on other OS. However, if you are able to sucessfully adapt the code
-  for other platforms (Windows, Mac OS, Matlab wrapper etc.), please notify me so that I
-  can release these versions on my webpage.
+  This program has been built on a fedora18 x64 machine and tested on Mac OS X. 
+  *No assistance* will be given to compile the code on other OS. However, if 
+  you are able to sucessfully adapt the code for other platforms (Windows, 
+  Matlab wrapper etc.), please notify me so that I can release these versions on 
+  the webpage:
+  
+    http://lear.inrialpes.fr/src/deepmatching/
 
 
 
-Example usage:
+Example usages and explanations:
   
-  ./deepmatching --help
+  To get detailed information on parameters:
+    ./deepmatching -h
+    ./deepmatching --help
   
   
-  ./deepmatching liberty1.png liberty2.png -downscale 2 -v
+  * Build verification:
+      ./deepmatching liberty1.png liberty2.png -downscale 2 -v
+      
     should produce the following output:
-    
       layer 0, patch_size = 16x16
       remaining 16 big cells (actually, 16 are unique)
       layer 1, patch_size = 32x32
@@ -52,35 +58,41 @@ Example usage:
       remaining 25 big cells (actually, 25 are unique)
       found 625 local matches
       gathering correspondences 96%...
-      8 8 0 12 2.66839 10
-      8 40 4 48 2.69817 9
-      8 24 8 32 2.62217 9
-      40 40 40 32 2.70007 0
-      40 56 44 52 2.63632 0
-      40 24 40 12 2.7058 0
-      56 40 56 28 2.68955 0
-      56 56 60 48 2.62668 0
-      56 24 56 12 2.72842 0
-      24 40 24 32 2.66295 3
-      24 56 28 60 2.62159 13
-  
+      8 8 0 12 2.55844 11
+      8 40 4 48 2.59401 10
+      8 24 8 32 2.50809 10
+      40 40 40 32 2.60314 0
+      40 56 44 52 2.52549 0
+      40 24 40 12 2.60961 0
+      56 40 56 28 2.59126 0
+      56 24 56 12 2.63527 0
+      24 40 24 32 2.5529 4
+      24 56 24 48 2.50281 4
   
   * To visualize the output correspondences:
-    ./deepmatching climb1.png climb2.png -nt 0 | python viz.py climb1.png climb2.png
+    Use the "viz.py" python script provided.
+      ./deepmatching climb1.png climb2.png -nt 0 | python viz.py climb1.png climb2.png
   
+  * To restrict matching to local neighborhood:
+    The "-ngh_rad <D>" option restricts the matching to a radius of <D> pixels.
+    It uses less memory and is faster. For instance, This should produce about 
+    the same output as before but costs about 2 times less memory and computations:
+    
+      ./deepmatching climb1.png climb2.png -nt 0 -ngh_rad 192 | python viz.py climb1.png climb2.png
   
  * To rescore matches prior to calling deepflow / epicflow:
     simply pipe the output correspondences in 'rescore.py'
-    ./deepmatching img1 img2 [args] | python rescore.py img1 img2
+      ./deepmatching img1 img2 [args] | python rescore.py img1 img2
   
   
  * Scale and invariant version: (see the --help)
-    ./deepmatching dino1.jpg dino2.jpg -nt 0 -downscale 1 -max_scale 2 -rot_range -45 +45 -v | python viz.py dino1.jpg dino2.jpg
+      ./deepmatching dino1.jpg dino2.jpg -nt 0 -downscale 1 -max_scale 2 -rot_range -45 +45 -v | python viz.py dino1.jpg dino2.jpg
     
     param -max_scale: maximum scale factor (here x2, default = x5)
     param -rot_range: rotation range in degrees (default = from 0 to 360)
 
-For details about the options, please refer to the help, the paper or the code.
+
+For details about the options, please refer to the help, the papers or the code.
 
 
 Important tip:
@@ -99,6 +111,17 @@ Version history:
   - Improved visualisation (viz.py) 
   - Removed useless/suboptimal options (-iccv_settings)
   - Fixed a bug related to memory allocation for large images
+
+  version 1.2:
+  - Added a new option "-ngh_rad" to restrict the matching to a local neighborhood, which allows
+    much reduced memory usage and computations.
+  - static-compiled version is now fully multhi-threaded with BLAS
+  - few minor bugfix, code cleaning and updates.
+
+
+
+
+
 
 
 

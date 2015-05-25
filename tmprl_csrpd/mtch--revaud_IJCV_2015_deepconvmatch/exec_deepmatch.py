@@ -41,5 +41,4 @@ if __name__ == "__main__":
     params = [p[:2].replace("--", "-") + p[2:] for p in params]
     params = ' '.join(params)
     #print params
-    ret = os.system("export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH; %s %s" % 
-                    (dm_dirpath, os.path.join(dm_dirpath, "deepmatching"), params)
+    ret = os.system("export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH; %s %s" % (dm_dirpath, os.path.join(dm_dirpath, "deepmatching"), params))

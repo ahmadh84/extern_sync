@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #include "image.h"
 #include "io.h"
 #include "deep_matching.h"
+#include <thread>
 
 void usage()
 {
@@ -41,7 +42,7 @@ void usage()
   p("    -hog.midsm <f=1.5>         intermediate HOG smoothing")
   p("    -hog.sig <f=0.2>           sigmoid strength")
   p("    -hog.postsm <f=1.0>        final HOG-smoothing")
-  p("    -hog.ninth <f=0.3>         small constant for texture-less areas")
+  p("    -hog.ninth <f=0.3>         robustness to pixel noise (eg. JPEG artifacts)")
   p("")
   p("  Matching parameters:")
 //p("    -iccv_settings             settings used for the ICCV paper")
@@ -50,10 +51,11 @@ void usage()
   p("    -downscale <n=1>           downscale the input images by 2^n")
 //p("    -overlap <n=999>           use overlapping patches in image1 from level n")
 //p("    -subref <n=0>              0: denser sampling or 1: not of image1 patches")
+  p("    -ngh_rad <n=0>             restrict matching to a neighborhood of n pixels (0=no)")
   p("    -nlpow <f=1.6>             non-linear rectification x := x^f")
 //p("    -maxima_mode <n=0>         0: from all top cells / 1: from local maxima")
 //p("    -min_level <n=2>           skip maxima in levels [0, 1, ..., n-1]")
-  p("    -mem <n=1>                 0/1 use optimization to reduce memory footprint")
+  p("    -mem <n=1>                 use optimization to reduce memory footprint if !=0")
 //p("    -scoring_mode <n=1>        type of correspondence scoring mode (0/1)")
   p("")
   p("  Fully scale & rotation invariant DeepMatching:")
@@ -144,7 +146,7 @@ int main(int argc, const char ** argv)
       params.desc_params.ninth_dim = atof(argv[current_arg++]);
     else if(isarg("-hog.nrmpix"))
       params.desc_params.norm_pixels = atof(argv[current_arg++]);
-    else if(isarg("-png_settings")) { // kept for backward compatibility
+    else if(isarg("-png_settings")) { 
       params.desc_params.presmooth_sigma = 0; // no image smoothing since the image is uncompressed
       params.desc_params.hog_sigmoid = 0.2;
       params.desc_params.mid_smoothing = 1.5;
@@ -165,6 +167,8 @@ int main(int argc, const char ** argv)
     //  params.subsample_ref = atoi(argv[current_arg++]);
     else if(isarg("-nlpow"))
       params.nlpow = atof(argv[current_arg++]);
+    else if(isarg("-ngh_rad"))
+      params.ngh_rad = atoi(argv[current_arg++]);
   // maxima parameters
     //else if(isarg("-maxima_mode"))
     //  params.maxima_mode = atoi(argv[current_arg++]);
@@ -192,6 +196,8 @@ int main(int argc, const char ** argv)
     //  params.low_mem = 1;
     //  params.min_level = 2;
     //  params.scoring_mode = 1;  // improved scoring
+    //} else if(isarg("-max_psize")) {
+    //  params.max_psize = atoi(argv[current_arg++]);
   // scale & rot invariant version
     } else if(isarg("-scale") || isarg("-max_scale")) {
       use_scalerot = true;
@@ -217,9 +223,11 @@ int main(int argc, const char ** argv)
       rsz_height = atoi(argv[current_arg++]);
     }else if(isarg("-v"))
       params.verbose++;
-    else if(isarg("-nt"))
+    else if(isarg("-nt")) {
       params.n_thread = atoi(argv[current_arg++]);
-    else if(isarg("-out"))
+      if (params.n_thread==0)
+        params.n_thread = std::thread::hardware_concurrency();
+    } else if(isarg("-out"))
       out_filename = argv[current_arg++];
     else if(isarg("-b"))
       write_binary_file = true;
@@ -277,6 +285,14 @@ int main(int argc, const char ** argv)
       im2 = rescale_image(im2, rsz_width, rsz_height);
     }
 
+    if( use_scalerot )
+      assert( params.ngh_rad == 0 || !"max trans cannot be used in full scale and rotation mode");
+    else
+      if( params.subsample_ref && (!ispowerof2(im1->width) || !ispowerof2(im1->height)) ) {
+        fprintf(stderr, "WARNING: first image has dimension which are not power-of-2\n");
+        fprintf(stderr, "For improved results, you should consider resizing the images with '-resize <w> <h>'\n");
+      }
+
     float_image* corres = compute_match_ims(im1, im2, params, sr_params, use_scalerot);
     // save result
     output_correspondences( out_fd, (corres_t*)corres->pixels, corres->ty, fx, fy, write_binary_file );
@@ -316,6 +332,14 @@ int main(int argc, const char ** argv)
       // im1's memory would be reallocated
       im1 = rescale_image(im1, rsz_width, rsz_height);
     }
+
+    if( use_scalerot )
+      assert( params.ngh_rad == 0 || !"max trans cannot be used in full scale and rotation mode");
+    else
+      if( params.subsample_ref && (!ispowerof2(im1->width) || !ispowerof2(im1->height)) ) {
+        fprintf(stderr, "WARNING: first image has dimension which are not power-of-2\n");
+        fprintf(stderr, "For improved results, you should consider resizing the images with '-resize <w> <h>'\n");
+      }
 
     // allocate memory for im2
     // if resizing, new memory is allocated on each iteration

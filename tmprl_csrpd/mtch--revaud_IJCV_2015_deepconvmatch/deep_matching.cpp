@@ -108,10 +108,6 @@ void prepare_big_cells( const int imshape[2], int cell_size, int overlap, int ch
     _prepare_big_cells( cell_size, offset, step, child_grid, child_norms, grid, children, norms );
 }
 
-int get_patch_desc_dim( float_layers* hog, int patch_size ) 
-{
-    return patch_size*patch_size * hog->tz; // number of dimensions of an atomic patch descriptor
-}
 
 void sample_patches( float_layers* hog, int_cube* pos, int patch_size, int f, float norm, int n_thread, 
                      float_image* patches, float_array* norms ) 
@@ -134,74 +130,28 @@ void sample_patches( float_layers* hog, int_cube* pos, int patch_size, int f, fl
     free(new_pos.pixels);
 }
 
-float_layers* prepare_dotprod_convolution( float_layers* hog, int patch_size, int extend, float norm, int nt )
-{
-  assert(0<=extend and extend<=1);
-  const int nh = get_patch_desc_dim(hog,patch_size);
-  const int etx = hog->tx+extend; // extend a bit the image
-  const int ety = hog->ty+extend;
-  
-  float_layers* res = NEW(float_layers);
-  *res = empty_layers(float,etx,ety,nh);
-  
-  float ninth_val = 0;
-  _prepare_dotprod_convolution( hog, patch_size, ninth_val, extend, res, nt );
-  
-  if( norm )  norm_layers( res, norm, nt );
-  return res;
-}
-
-
-extern "C" {
-int sgemm_(char *transa, char *transb, integer *m, integer *
-           n, integer *k, float *alpha, float *a, integer *lda, float *b, integer *
-           ldb, float *beta, float *c, integer *ldc);
-}
-
-void fastconv( float_image* patches, float_layers* hog, int patch_size, int extend, float norm, int nt,
-               float_layers* res ) 
-{
-  assert(0<=extend and extend<=1);
-  float_layers* convolved_hog = prepare_dotprod_convolution( hog, patch_size, extend, norm, nt );
-  assert( patches->tx==convolved_hog->tz);
-  int nh = get_patch_desc_dim(hog,patch_size);
-  
-  /* matrix matrix multiplication
-     res = patches * convolved_hog
-     PxI   P x nh     nh x I
-  */
-  int P = patches->ty;
-  int I = convolved_hog->tx*convolved_hog->ty;
-  *res = empty_layers(float,convolved_hog->tx,convolved_hog->ty,P);
-  assert(res->pixels || !"error: ran out of memory before sgemm");
-  
-  // multi-threaded fast matrix product
-  char T='n'; float alpha = 1, beta = 0;
-  sgemm_(&T,&T,&I,&P,&nh,&alpha,convolved_hog->pixels,&I,patches->pixels,&nh,&beta,res->pixels,&I);
-  free_layers(convolved_hog);
-  
-  rectify_conv( patch_size, hog->tz, patches, extend, res, nt ); 
-}
 
 const float trans_inv = 0.9f; 
 
-void convolve_atomic_patches( float_layers* source, float_layers* target, int psize, int f, 
-                              const dm_params_t* params, int_cube* grid, 
-                              float_image* norms, int_array* assign, float_layers* res_map ) 
+void convolve_atomic_patches( float_layers* source, float_layers* target, 
+                              const dm_params_t* params, res_scale* first_level ) 
 {
     const int extend = 1; // slightly spatially extend response maps
     const float norm = 1; // renorm patches
     
+    const int f = first_level->f; // scale factor w.r.t. original image
+    const int psize = first_level->patch_size; // current patch size
+    
     // first, sample patches
     float_image patches = {0};
-    assert(!norms->pixels);
-    *norms = image_like(float, grid);
-    float_array norms_arr = {norms->pixels,norms->tx*norms->ty};
-    sample_patches( source, grid, psize, f, norm, params->n_thread, &patches, &norms_arr );
+    assert(!first_level->norms.pixels);
+    first_level->norms = image_like(float, &first_level->grid);
+    float_array norms_arr = {first_level->norms.pixels, (int)IMG_SIZE(&first_level->norms)};
+    sample_patches( source, &first_level->grid, psize, f, norm, params->n_thread, &patches, &norms_arr );
     //hash_image(&patches)
     
     // rectify the norm to a boolean (0 or 1) (useless ?)
-    *assign = empty_array(int,norms_arr.tx);
+    first_level->assign = empty_array(int,norms_arr.tx);
     int n=0, tx = patches.tx;
     for(int i=0; i<norms_arr.tx; i++) {
       norms_arr.pixels[i] = norms_arr.pixels[i]>0;
@@ -210,9 +160,9 @@ void convolve_atomic_patches( float_layers* source, float_layers* target, int ps
       if( norms_arr.pixels[i] ) {
         if( n < i ) // copy
           memcpy( patches.pixels + n*tx, patches.pixels + i*tx, tx*sizeof(float));
-        assign->pixels[i] = n++;
+        first_level->assign.pixels[i] = n++;
       } else 
-        assign->pixels[i] = -1;
+        first_level->assign.pixels[i] = -1;
       
       // convolution is not fully invariant to the image border: 
       // blank cells outside the image are a bit disadvantageous
@@ -221,20 +171,45 @@ void convolve_atomic_patches( float_layers* source, float_layers* target, int ps
     }
     patches.ty = n; // update new number of valid patches
     
-    //hash_image(norms)
+    //hash_image(&first_level->norms)
     //hash_image(&patches)
     
     // compute the first level convolutions
-    fastconv( &patches, target, psize/f, extend, norm, params->n_thread, res_map );
+    fastconv( &patches, target, psize/f, params->ngh_rad/f, extend, norm, params->n_thread, first_level );
     
     free(patches.pixels);
 }
 
-void subsample2( float_layers* hog, float_layers* res, int nt )
+int_image* subsample2( float_layers* hog, int true_shape[2], int_image* offsets, float_layers* res, int nt )
 {
   assert(!res->pixels);
-  *res = empty_layers(float,(hog->tx+1)/2,(hog->ty+1)/2,hog->tz);
-  _subsample2( hog, res, nt );
+  if ( offsets->pixels == NULL )
+    assert( hog->tx == true_shape[0] && hog->ty == true_shape[1] );
+  
+  // set downsampled size
+  true_shape[0] = (true_shape[0]+1)/2;
+  true_shape[1] = (true_shape[1]+1)/2;
+  assert( true_shape[0]>0 && true_shape[1]>0 );
+  
+  if ( offsets->pixels == NULL ) {
+    *res = empty_layers(float, true_shape[0], true_shape[1], hog->tz);
+    _subsample2( hog, res, nt );
+    return NULL;
+    
+  } else {
+    // slightly bigger, so that mininum size always >= 2
+    int width = (hog->tx+2)/2;
+    int height = (hog->ty+2)/2;
+    *res = empty_layers(float, width, height, hog->tz);
+    _subsample2_offset( hog, offsets, res, nt );
+    
+    // compute new offsets
+    int_image* res_offsets = NEW(int_image);
+    *res_offsets = image_like(int, offsets);
+    for(long i=0; i<IMG_SIZE(offsets); i++)
+      res_offsets->pixels[i] = (int)floor( offsets->pixels[i]/2.f );
+    return res_offsets;
+  }
 }
 
 #define CHECK_MAPS(rmaps) assert(min_array_f((rmaps)->pixels,LAYERS_SIZE(rmaps))>=0 && \
@@ -242,8 +217,8 @@ void subsample2( float_layers* hog, float_layers* res, int nt )
 
 /* aggregate response maps of children patches to form response maps of parent patches */
 int sparse_conv( int_cube* children, int_array* children_assign, float_image* child_norms, 
-                 int true_patch_size, float_layers* map, int nt,
-                 float_image* norms, int_array* assign, float_layers* res )
+                 int true_patch_size, float_layers* map, int_image* offsets, int nt,
+                 res_scale* res )
 {
   float_layers ext_map;
   if( MIN(map->tx,map->ty) < 5 ) {
@@ -253,24 +228,30 @@ int sparse_conv( int_cube* children, int_array* children_assign, float_image* ch
         for(int i=0; i<map->tx; i++)
           ext_map.pixels[(l*ext_map.ty + j)*ext_map.tx + i] = map->pixels[(l*map->ty + j)*map->tx + i];
     map = &ext_map;
+    res->true_shape[0] = ext_map.tx;
+    res->true_shape[1] = ext_map.ty;
   }
   
-  int_image _children = reshape_z_xy(int,children);
+  int_image _children = reshape_z_xy(int, &res->children);
   
-  assert(!res->pixels);
-  *res = empty_layers(float,map->tx,map->ty,_children.ty);
+  if( offsets )
+    res->offsets = empty_image(int, 2, _children.ty);
+  
+  assert(!res->res_map.pixels);
+  res->res_map = empty_layers(float, map->tx, map->ty, _children.ty);
   int gap = true_patch_size / 4;
   assert(gap>0);
-  float_array _norms = reshape_xy(float, norms);
+  float_array _norms = reshape_xy(float, &res->norms);
   float_array _child_norms = reshape_xy(float, child_norms);
   
   // allocate useless assign
-  *assign = empty_array(int,res->tz);
-  for(int i=0; i<assign->tx; i++) assign->pixels[i] = i;
+  res->assign = empty_array(int, res->res_map.tz);
+  for(int i=0; i<res->assign.tx; i++) res->assign.pixels[i] = i;
   
   int_array* _assign = NULL;
   int_array* _ch_assign = children_assign->pixels ? children_assign : NULL;
-  int n = _sparse_conv( &_children, _ch_assign, gap, trans_inv, map, &_child_norms, &_norms, _assign, res, nt );
+  int n = _sparse_conv( &_children, _ch_assign, gap, trans_inv, map, offsets, 
+                        &_child_norms, &_norms, _assign, &res->res_map, &res->offsets, nt );
   //CHECK_MAPS(res);
   
   if(map==&ext_map) free(ext_map.pixels);
@@ -279,7 +260,7 @@ int sparse_conv( int_cube* children, int_array* children_assign, float_image* ch
 
 res_scale new_pyramid_level(int f, int psize) 
 {
-  res_scale res = {0};
+  res_scale res = {0};          // initialize everything to 0/NULL
   res.f = f;                    // subsampling factor with respect to original image size
   res.patch_size = psize;       // patch size in original image coordinates
   return res;
@@ -312,8 +293,7 @@ void compute_matching_pyr( float_layers* source, float_layers* target, const dm_
     //hash_cube(&last->grid)
     
     //hash_layers(source)
-    convolve_atomic_patches( source, target, psize, f, params, &last->grid, &last->norms, 
-                             &last->assign, &last->res_map );
+    convolve_atomic_patches( source, target, params, last );
     //hash_layers(&last->res_map)
     if( params->verbose ) 
       printf("remaining %ld big cells (actually, %d are unique)\n", IMG_SIZE(&last->grid), last->res_map.tz);
@@ -342,21 +322,26 @@ void compute_matching_pyr( float_layers* source, float_layers* target, const dm_
         _max_filter_3_layers( &child->res_map, &maxpooled_res_map, params->n_thread);
         //CHECK_MAPS(&maxpooled_res_map);
         float_layers subs_res_map = {0};
-        subsample2( &maxpooled_res_map, &subs_res_map, params->n_thread );
+        last->true_shape[0] = child->true_shape[0]; // will be modified in subsampled2()
+        last->true_shape[1] = child->true_shape[1];
+        int_image* offsets = subsample2( &maxpooled_res_map, last->true_shape, &child->offsets, 
+                                         &subs_res_map, params->n_thread );
         free(maxpooled_res_map.pixels);
         //CHECK_MAPS(&subs_res_map);
         
         // build the set of patches at this scale
         prepare_big_cells( src_shape, psize, params->overlap<L+1, params->overlap<L, 
                            &child->grid, &child->norms, dense_step, &last->grid, &last->children, &last->norms );
+        //DA(last->true_shape,2)
         //hash_cube(&last->grid)
         //hash_image(&last->norms)
         //hash_cube(&last->children)
         
         // aggregate children response maps to form parent response maps
-        sparse_conv( &last->children, &child->assign, &child->norms, psize/f, &subs_res_map, 
-                     params->n_thread, &last->norms, &last->assign, &last->res_map );
+        sparse_conv( &last->children, &child->assign, &child->norms, psize/f, &subs_res_map, offsets, 
+                     params->n_thread, last );
         free(subs_res_map.pixels);
+        free_image(offsets);
         //CHECK_MAPS(&last->res_map);
         if( params->verbose ) 
           printf("remaining %ld big cells (actually, %d are unique)\n", IMG_SIZE(&last->grid), last->res_map.tz);
@@ -503,9 +488,10 @@ float_image* gather_correspondences( int src_shape[2], int target_shape[2],
     int i;
     // allocate temporary optimization maps
     for(i=0; i<n_scales; i++) {
-      int size = scales[i].res_map.tx*scales[i].res_map.ty*scales[i].res_map.tz;
+      long size = LAYERS_SIZE(&scales[i].res_map);
       if( params->low_mem && size > 1000003 ) size = 1000003; // big prime
-      scales[i].passed = zeros_layers(float, size, 1, 1);
+      assert( size <= 2147483647 || !"try using -mem parameter");
+      scales[i].passed = zeros_array(float, (int)size);
     }
     
     #if defined(USE_OPENMP)
@@ -514,12 +500,21 @@ float_image* gather_correspondences( int src_shape[2], int target_shape[2],
     for(i=0; i<n_maxima; i++) {
       if(params->verbose && i%100==0) printf("\rgathering correspondences %d%%...",100*i/n_maxima);
       int* m = maxima->pixels + tx*i;
-      assert(m[0]<n_scales);
+      int level = m[0], num_map = m[1];
+      int x = m[2], y = m[3];
+      assert(level<n_scales);
+      
+      if( scales[level].offsets.pixels ) {
+        // add offset to form real image coordinates
+        x += scales[level].offsets.pixels[2*num_map+0];
+        y += scales[level].offsets.pixels[2*num_map+1];
+      }
+      
       if( params->scoring_mode )  // new mode
-        _argmax_correspondences( scales.data(), m[0], m[1], m[2], m[3], ((float*)m)[4], 
+        _argmax_correspondences( scales.data(), level, num_map, x, y, ((float*)m)[4], 
                                     &corres0, step, &corres1, step, i );
       else  // old iccv mode
-        _argmax_correspondences_v1( scales.data(), m[0], m[1], m[2], m[3], m[0]*((float*)m)[4], 
+        _argmax_correspondences_v1( scales.data(), level, num_map, x, y, m[0]*((float*)m)[4], 
                                     &corres0, step, &corres1, step, i );
     }
     
@@ -649,10 +644,6 @@ float_layers* rotate45( float_layers* hog, const dm_params_t* params, full_corre
   
   // output inverted rot
   memcpy( corres_out->rot, rot, 6*sizeof(float) );
-//  DA(corres_out->rot,6)
-//  save_layers( "/tmp/hog.raw", hog );
-//  save_layers( "/tmp/rot_hog.raw", rot_hog );
-//  getchar();
   
   return rot_hog;
 }
@@ -670,9 +661,10 @@ void set_default_dm_params( dm_params_t* params )
   params->overlap = 999;  // don't use overlapping patches
   params->subsample_ref = false;  // don't subsample patches in reference image (=first image)
   params->nlpow = 1.6;
+  params->ngh_rad = 0; // no limit by default
   params->maxima_mode = 0;  // don't use maxima, just start from all top patches
   params->min_level = 2;  // useless
-  params->max_psize = 1024; // maximum patch size
+  params->max_psize = 999; // maximum patch size
   params->low_mem = true; // optimize mem but might slightly deteriorate results
   params->verbose = 0;
   params->scoring_mode = 1; // improved scoring scheme
@@ -688,12 +680,13 @@ float_image* deep_matching( image_t* img0, image_t* img1, const dm_params_t* par
   assert(between(0,params->overlap,999));
   assert(between(0,params->subsample_ref,1));
   assert(between(0.1,params->nlpow,10));
+  assert(between(0,params->ngh_rad,1<<16));
   assert(between(0,params->maxima_mode,1));
   assert(between(0,params->min_level,4));
   assert(between(0,params->low_mem,1));
   assert(between(0,params->scoring_mode,1));
   assert(between(0,params->verbose,10));
-  assert(between(0,params->n_thread,128));
+  assert(between(1,params->n_thread,128));
   
   // extract pixel descriptors
   float_layers *source, *target;
@@ -724,7 +717,7 @@ float_image* deep_matching( image_t* img0, image_t* img1, const dm_params_t* par
   // select the best displacements (maxpool merge)
   float_image* corres = gather_correspondences( src_shape, target_shape, matching_pyr, maxima, params, corres_out );
   
-  //hash_image(corres);D(9)getchar();
+  //hash_image(corres);
   
   // free everything
   free_matching_pyramid(matching_pyr);

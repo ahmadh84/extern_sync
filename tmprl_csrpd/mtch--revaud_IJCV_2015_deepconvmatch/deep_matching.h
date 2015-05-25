@@ -33,6 +33,7 @@ typedef struct {
   int overlap;            // pyramid level at which patches starts to overlap (999 => no overlap at all)
   bool subsample_ref;     // true if larger patches higher in the pyramid are not densely sampled
   float nlpow;            // non-linear power rectification
+  int ngh_rad;            // neighborhood size in pixels => crop res_map (0 == infinite)
   int maxima_mode;        // 1: standard / 0: from all top-level patches
   int min_level;          // minimum pyramid level to retrieve maxima
   int max_psize;          // maximum patch size
@@ -68,8 +69,10 @@ typedef struct {
   int_array assign;     // mapping between patches and their response maps
   float_layers res_map; // response map of the patches on the second image
   float_layers max_map; // max-filtered response map
+  int true_shape[2];    // true res_map shape (width, height) in case of crop (if ngh_rad>0)
+  int_image offsets;    // res_map offsets in case of crop (if ngh_rad>0)
   int_cube children;    // index of children patches in the previous level
-  float_layers passed;  // remember the best score so far at each response when doing argmax
+  float_array passed;  // remember the best score so far at each response when doing argmax
   
 } res_scale;  
 

@@ -78,7 +78,6 @@ DEFINE_IMG(float)
 #define ASSERT_IMG_ZEROS(img) {int size=img->tx*img->ty; assert((img->pixels[0]==0 && img->pixels[size/2]==0 && img->pixels[size-1]==0) || !"error: matrix " #img "is supposed to be zeros");}
 #define IMG_SIZE(img) (long((img)->tx)*(img)->ty)
 
-#define free_image(img) {free(img->pixels); free(img); img=NULL;}
 
 
 /************************
@@ -111,7 +110,6 @@ DEFINE_CUBE(float)
 #define ASSERT_CUBE_ZEROS(img) {int size=img->tx*img->ty*img->tz; assert((img->pixels[0]==0 && img->pixels[size/2]==0 && img->pixels[size-1]==0) || !"error: matrix " #img "is supposed to be zeros");}
 #define CUBE_SIZE(cube) (long((cube)->tx)*(cube)->ty*(cube)->tz)
 
-#define free_cube(cube) free_image(cube)
 
 
 /************************
@@ -142,7 +140,6 @@ DEFINE_LAYERS(float)
 #define ASSERT_LAYERS_ZEROS ASSERT_CUBE_ZEROS
 #define LAYERS_SIZE(layers)   CUBE_SIZE(layers)
 
-#define free_layers(cube) free_cube(cube)
 
 
 /*****************
@@ -165,12 +162,16 @@ DEFINE_LAYERS(float)
 #define layers_like(type,l)    ((type##_layers){NEWA(type,long((l)->tx)*(l)->ty*(l)->tz),(l)->tx,(l)->ty,(l)->tz})
 
 
-
 #define reshape_xy(type, arr)   ((type##_array){(arr)->pixels, (arr)->tx*(arr)->ty})
 #define reshape_xyz(type, arr)  ((type##_array){(arr)->pixels, (arr)->tx*(arr)->ty*(arr)->tz})
 #define reshape_xy_z(type, arr) ((type##_image){(arr)->pixels, (arr)->tx*(arr)->ty, (arr)->tz})
 #define reshape_z_xy(type, arr) ((type##_image){(arr)->pixels, (arr)->tz, (arr)->tx*(arr)->ty})
 #define reshape_x_yz(type, arr) ((type##_image){(arr)->pixels, (arr)->tx, (arr)->ty*(arr)->tz})
+
+
+#define free_image(img) if(img){free(img->pixels); free(img); img=NULL;}
+#define free_cube(cube) free_image(cube)
+#define free_layers(cube) free_cube(cube)
 
 
 // debugging only

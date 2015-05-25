@@ -81,9 +81,9 @@ void _max_filter_3( float_image* img, float_image* res, int n_thread ) {
 
 void _max_filter_3_layers( float_layers* img, float_layers* res, int n_thread ) {
   ASSERT_SAME_LAYERS_SIZE(img,res);
-  const int npix = img->tx*img->ty;
+  const long npix = img->tx*img->ty;
   
-  long l;
+  int l;
   #if defined(USE_OPENMP)
   omp_set_nested(0);
   omp_set_dynamic(0);
@@ -119,6 +119,51 @@ void _subsample2( float_layers* img, float_layers* res, int n_thread ) {
       for(x=0; x<tx; x++)
         r[x] = i[x<<1];
     }
+  }
+}
+
+/* Subsample an array, equivalent to res = trueimg[:,offset_y::2,offset_x::2]
+   except at boundaries, where the rules are a bit more complex:
+    if img->tx % 2 == 0:
+      if offset_x % 2 == 0: 
+        trueimg[offset_x+img->tx-1] is also sampled
+      else:
+        trueimg[offset_x] is also sampled
+    elif img->tx % 2 == 1:
+      trueimg[offset_x] is also sampled
+   
+   ...and likewise for y dimension.
+*/
+void _subsample2_offset( float_layers* img, int_image* offsets, float_layers* res, int n_thread ) {
+  const int n_layers = res->tz;
+  assert( img->tz==n_layers );
+  assert( offsets->tx==2 && offsets->ty==n_layers );
+  const int tx = res->tx;
+  const int ty = res->ty;
+  assert( (img->tx+2)/2 == tx );
+  assert( (img->ty+2)/2 == ty );
+  
+  long l;
+  #if defined(USE_OPENMP)
+  #pragma omp parallel for num_threads(n_thread)
+  #endif
+  for(l=0; l<n_layers; l++) {
+    int x,y;
+    const int ox = (offsets->pixels[2*l]+0x10000) % 2;
+    const int oy = (offsets->pixels[2*l+1]+0x10000) % 2;
+    assert(ox>=0 && oy>=0);
+    #define get_img_2pos(x,tx,ox) MAX(0, MIN(img->tx-1, 2*x-ox))
+    
+    for(y=0; y<ty; y++) {
+      float* i = img->pixels + (l*img->ty + get_img_2pos(y,ty,oy))*img->tx;
+      float* r = res->pixels + (l*ty + y)*tx;
+      r[0] = i[get_img_2pos(0,tx,ox)];  // first is special case
+      for(x=1; x<tx-1; x++)
+        r[x] = i[2*x-ox];
+      r[x] = i[get_img_2pos(x,tx,ox)];  // last is special case
+    }
+    
+    #undef get_img_2pos
   }
 }
 
@@ -267,7 +312,7 @@ void _extract_maxima( res_scale* scales, int n_scales, float_array* sc_factor, f
     res_scale* sc = scales + s;
     const int tx = sc->res_map.tx;
     const int ty = sc->res_map.ty;
-    const int npix = tx*ty;
+    const long npix = tx*ty;
     const int n_layers = sc->assign.tx;
     
     // helpful values...
@@ -296,7 +341,7 @@ void _extract_maxima( res_scale* scales, int n_scales, float_array* sc_factor, f
     const float* down_layers = (s>min_scale_max) ? sc[-1].max_map.pixels : NULL;
     const int* down_assign = (s>min_scale_max) ? sc[-1].assign.pixels : NULL;
     
-    long l;
+    int l;
     #if defined(USE_OPENMP)
     #pragma omp parallel for num_threads(n_thread)
     #endif
@@ -380,22 +425,18 @@ void _extract_maxima( res_scale* scales, int n_scales, float_array* sc_factor, f
 /* Return the best local children assignement in a 3x3 neigborhood
    l,u,v is the approximate position of the children in the corresponding response map[l,v,u]
 */
-static inline float _local_argmax( long l, int u, int v, const float_layers* map, int* x, int* y ) {
-  if(l<0) return 0; // bad children
-  int umin = u-1;
-  int vmin = v-1;
-  if(umin<0) umin=0;
-  if(vmin<0) vmin=0;
-  int umax = u+2;
-  int vmax = v+2;
-  const int etx = map->tx-1; // because of extended response map
-  const int ety = map->ty-1;
-  if(umax>=etx) umax=etx;
-  if(vmax>=ety) vmax=ety;
+static inline float _local_argmax( long l, int u, int v, const float_layers* map, int extended, /*float reg,*/ int* x, int* y ) {
+  assert(0<=l && l<map->tz);
+  int umin = MAX(0, u-1);
+  int vmin = MAX(0, v-1);
+  const int etx = map->tx-extended; // because of extended response map
+  const int ety = map->ty-extended;
+  int umax = MIN(etx, u+2);
+  int vmax = MIN(ety, v+2);
   
   // determine best children in the neighborhood (argmax)
   const int tx = map->tx;
-  int i,j,bestx=0,besty=0; float m=-1.f;
+  int i,j,bestx=0,besty=0; float m=0.f;
   const float *r = map->pixels + l*tx*map->ty;
   for(j=vmin; j<vmax; j++)
     for(i=umin; i<umax; i++) {
@@ -469,12 +510,13 @@ void _argmax_correspondences_rec( res_scale* scales, int s, int l, int x, int y,
     }
   } else {
     // mark this maximum as already processed
-    if( sc->passed.pixels) {
-      const int offset = (sc->assign.pixels[l]*sc->res_map.ty + y)*sc->res_map.tx + x;
-      //score += sc->res_map.pixels[offset]; // already done
+    assert(0<=l && l<sc->assign.tx);
+    if( sc->passed.pixels ) {
+      const long truel = sc->assign.pixels[l];
+      const long offset = ((truel*sc->true_shape[1] + MAX(0,y))*sc->true_shape[0] + MAX(0,x)) % sc->passed.tx;
       //pthread_mutex_lock (&mutex);
-      int useless = ( sc->passed.pixels[offset%sc->passed.tx] >= score );
-      if(!useless)  sc->passed.pixels[offset%sc->passed.tx] = score;
+      int useless = ( sc->passed.pixels[offset] >= score );
+      if(!useless)  sc->passed.pixels[offset] = score;
       //pthread_mutex_unlock (&mutex);
       if(useless) return; // this maximum was already investigated with a better score
     }
@@ -494,15 +536,33 @@ void _argmax_correspondences_rec( res_scale* scales, int s, int l, int x, int y,
     // for all children
     int u,v,c=0;
     for(v=0; v<nc; v++) {
-      const int yc = y + (2*v/(nc-1)-1)*lower_gap;
       for(u=0; u<nc; u++,c++) {
         const int ch = children[c];
         if(ch<0) continue;
-        const int xc = x + (2*u/(nc-1)-1)*lower_gap;
+        const long l = lower_ass[ch];
+        if(l<0) continue;
+        
+        // position of children in child1 = parent1 - (parent0-child0)
+        int yc = y + (2*v/(nc-1)-1)*lower_gap;
+        int xc = x + (2*u/(nc-1)-1)*lower_gap;
+        int ex = 1; // extended response_maps 
+        
+        if( lower->offsets.pixels ) {
+          // take offsets into account
+          xc -= lower->offsets.pixels[2*l+0];
+          yc -= lower->offsets.pixels[2*l+1];
+          ex = 0; // no extension... maybe
+        }
         
         // position of children in child1 = parent1 - (parent0-child0)
         int xb, yb;
-        float child_score = _local_argmax( lower_ass[ch], xc, yc, &lower->res_map, &xb, &yb );
+        float child_score = _local_argmax( lower_ass[ch], xc, yc, &lower->res_map, ex, &xb, &yb );
+        
+        if( lower->offsets.pixels ) {
+          // back to real image coordinates
+          xb += lower->offsets.pixels[2*l+0];
+          yb += lower->offsets.pixels[2*l+1];
+        }
         
         if( child_score )
           _argmax_correspondences_rec( scales, s-1, ch, xb, yb, res0, step0, res1, step1, index, score + child_score );
@@ -598,7 +658,7 @@ void _argmax_correspondences_rec_v1( res_scale* scales, int s, int l, int x, int
         // position of children in child1 = parent1 - (parent0-child0)
         const int l = lower_ass[children[c]];
         int xb=0, yb=0;
-        float child_score = _local_argmax( l, xc, yc, &lower->res_map, &xb, &yb );
+        float child_score = _local_argmax( l, xc, yc, &lower->res_map, 1, &xb, &yb );
         
         if( child_score>0 )
           _argmax_correspondences_rec_v1( scales, s-1, ch, xb, yb, res0, step0, res1, step1, index, top_score );
@@ -620,7 +680,7 @@ void _argmax_correspondences_v1( res_scale* scales, int s, int l, int x, int y, 
 static float** get_list_corres( const float_cube* map, int* nb ) {
   const int tz = map->tz;
   float* m = map->pixels;
-  const int npix = map->tx*map->ty;
+  const long npix = map->tx*map->ty;
   float** res = NEWA(float*,npix);
   
   int i,n=0;

@@ -17,30 +17,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #ifndef ___CONV_H___
 #define ___CONV_H___
 #include "array_types.h"
+#include "deep_matching.h"
 
 
-/* normalize each pixel of a multi-layers image 
-   norm = {0:nothing, 1:L2-normalization, 0-1: normalization by (L2-norm)**<norm> }
+/* Return the vectorized dimension of a HOG patch
 */
-void norm_layers( float_layers* res, float norm, int n_thread );
-
-
-/* Prepare image for dotprod : dot(patches, res)
-   where patches is n_patches x patch_dim
-   set outside of the image to be equal to (0,...,ninth_val)
-*/
-void _prepare_dotprod_convolution( float_layers* img, int patch_size, float ninth_val, int extend, 
-                                   float_layers* res, int n_thread );
-
-
-
-/* Prepare image for dotprod with a subsampled2 patch: dot(patches, res)
-   where patches is n_patches x patch_dim
-   set outside of the image to be equal to (0,...,ninth_val)
-*/
-void _prepare_dotprod_convolution2( float_layers* img, int patch_size, float ninth_val, int extend, 
-                                    float_layers* res, int n_thread );
-
+int get_patch_desc_dim( float_layers* hog, int patch_size );
 
 
 /* Sample a set of patches from a HOG image.
@@ -54,10 +36,10 @@ void _sample_patches( float_layers* hog, float_layers* color, int_image* pos, in
                       float_image* res, float_array* norms, int n_thread );
 
 
-/* correct the convolution on the boundaries of the image
+/* normalize each pixel of a multi-layers image 
+   norm = {0:nothing, 1:L2-normalization, 0-1: normalization by (L2-norm)**<norm> }
 */
-void rectify_conv( int patch_size, int nori,float_image* patches, int extend, float_layers* res, int n_thread );
-
+void norm_layers( float_layers* res, float norm, int n_thread );
 
 
 /* Prepare a grid of cell positions in the first image for a given scale. Big cells inherit the cell at the previous scale.
@@ -75,18 +57,29 @@ void _prepare_big_cells( int size, int offset, int step,
 
 
 
+/* Compute the correlation of all patches with the second image (hog).
+   In case of ngh_rad>0, the correlation is only computed in a small local neighborhood
+   (whose size is parameterized by ngh_rad).
+   if extend: width and height of output maps are extended
+   if norm: correlation are normalized afterwards.
+*/
+void fastconv( float_image* patches, float_layers* hog, int patch_size, int ngh_rad, 
+                int extend, float norm, int nt, res_scale* res );
+
+
+
 /* Compute the (sparse) convolutions specified by <children> on <map> and put the result in <res>.
    A standard order is assumed on the children: 
     a response map #p is built from the children[p] at positions 
       [(gap*dx,gap*dy) for dy in dys for dx in dxs]
       where dxs = [-1,1] or [-1,0,1]
             dys = [-1,1] or [-1,0,1]
-   children_assign denote assignement of the children level, while assign is for the next level
+   child_assign denote assignement of the children level, while assign is for the next level
    child_norms contain the norms of small patches and norms for big new cells
 */
-int _sparse_conv( int_image* children, int_array* children_assign, int gap, float trans_inv,
-                  float_layers* map, float_array* child_norms, float_array* norms, int_array* assign, 
-                  float_layers* res, int n_thread );
+int _sparse_conv( int_image* children, int_array* child_assign, int gap, float trans_inv,
+                   float_layers* child_map, int_image* offsets, float_array* child_norms, float_array* norms, 
+                   int_array* assign, float_layers* res, int_image* res_offsets, int n_thread );
 
 
 

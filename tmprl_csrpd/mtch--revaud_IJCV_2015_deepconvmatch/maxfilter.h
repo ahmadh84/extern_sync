@@ -34,6 +34,11 @@ void _max_filter_3_layers( float_layers* img, float_layers* res, int n_thread );
 */
 void _subsample2( float_layers* img, float_layers* res, int n_thread );
 
+/* Subsample an array, equivalent to res = trueimg[:,offset_y::2,offset_x::2]
+   except at boundaries, where the rules are a bit more complex (see code)
+*/
+void _subsample2_offset( float_layers* img, int_image* offsets, float_layers* res, int n_thread );
+
 
 /* Max-pool in 2x2 px non-overlapping cells
 */
