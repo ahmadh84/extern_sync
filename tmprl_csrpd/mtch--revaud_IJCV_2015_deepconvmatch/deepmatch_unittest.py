@@ -2,6 +2,7 @@
 
 import os
 import sys
+import subprocess
 import tempfile
 import struct
 import unittest
@@ -65,7 +66,9 @@ def deep_matches_vids(exec_name, vid_frames_path, extra_params=""):
     ffmpeg_cmd = "ffmpeg -i %s -c:v huffyuv -pix_fmt rgb24 %s" % (vid_frames_path, tmp_vid_fname)
     cmd = '%s -i "%s" %s -b -out %s' % (exec_name, tmp_vid_fname, extra_params, tmp_fname)
     try:
-        ret = os.system(ffmpeg_cmd)
+        proc = subprocess.Popen(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        ret = proc.wait()
         t1 = datetime.now()
         ret = os.system(cmd)
         t2 = datetime.now()
@@ -123,15 +126,15 @@ class ParserUnitTest(unittest.TestCase):
             self.assertTrue(math.fabs(m1[4] - m2[4]) < 1e-1, "maxima not equal %f != %f" % (m1[4], m2[4]))
             self.assertTrue(math.fabs(m1[5] - m2[5]) < 4, "score not equal %d != %d" % (m1[5], m2[5]))
     
-    def run_video_test(self, seq_path, num_frames, skip_frames):
-        all_matches = deep_matches_vids("./deepmatching", seq_path, extra_params=self.cp + " -k %d" % skip_frames)
+    def run_video_test(self, seq_path, num_frames, skip_frames, params=""):
+        all_matches = deep_matches_vids("./deepmatching", seq_path, extra_params=self.cp+' '+params + " -k %d" % skip_frames)
         all_matches2 = []
         for fi in xrange(1, num_frames-skip_frames, skip_frames+1):
             frame1_num = fi
             frame2_num = fi + skip_frames + 1
             im1_fp = seq_path % frame1_num
             im2_fp = seq_path % frame2_num
-            matches = deep_matches_ims("./deepmatching", im1_fp, im2_fp, True, extra_params=self.cp)
+            matches = deep_matches_ims("./deepmatching", im1_fp, im2_fp, True, extra_params=self.cp+' '+params)
             all_matches2.append(matches)
 
         self.assertEqual(len(all_matches), len(all_matches2), "The number of match sets is unequal")
@@ -163,31 +166,44 @@ class ParserUnitTest(unittest.TestCase):
         self.cmp_matches(matches1, matches2)
 
     def test04_static(self):
-        """tests output against statically compiled binary
+        """tests binary against statically compiled binary for jpg
+        """
+        # compute deep matches for two images
+        matches1 = deep_matches_ims("./deepmatching", "dino1.jpg", "dino2.jpg", True, extra_params=self.cp)
+        matches2 = deep_matches_ims("./deepmatching-static", "dino1.jpg", "dino2.jpg", False, False, extra_params=self.cp)
+        self.cmp_matches(matches1, matches2)
+
+    def test05_static(self):
+        """tests output against statically compiled binary for png
         """
         # compute deep matches for two images
         matches1 = deep_matches_ims("./deepmatching", "climb1.png", "climb2.png", True, extra_params=self.cp)
         matches2 = deep_matches_ims("./deepmatching-static", "climb1.png", "climb2.png", False, False, extra_params=self.cp)
         self.cmp_matches(matches1, matches2)
 
-    def test05_video(self):
+    def test06_video(self):
         """tests matches produced from a video
         """
         seq_path = "test_ims/soldier/soldier_%03d.png"
-        self.run_video_test(seq_path, 11, 0)
+        self.run_video_test(seq_path, 11, 0, '-jpg_settings')
 
-    def test06_video(self):
+    def test07_video(self):
         """tests matches produced from a video with 1 skipped frame
         """
         seq_path = "test_ims/soldier/soldier_%03d.png"
-        self.run_video_test(seq_path, 11, 1)
+        self.run_video_test(seq_path, 11, 1, '-jpg_settings')
 
-    def test07_video(self):
+    def test08_video(self):
         """tests matches produced from a video with 2 skipped frames
         """
         seq_path = "test_ims/soldier/soldier_%03d.png"
-        self.run_video_test(seq_path, 11, 2)
+        self.run_video_test(seq_path, 11, 2, '-jpg_settings')
 
+    def test09_video(self):
+        """tests matches produced from a video and limiting match neighborhood
+        """
+        seq_path = "test_ims/soldier/soldier_%03d.png"
+        self.run_video_test(seq_path, 11, 0, '-jpg_settings -ngh_rad 20')
 
 if __name__ == "__main__":
     """Executes the unit tests in ParserUnitTest"""

@@ -35,17 +35,30 @@ UBYTE_image* image_to_arraytype( image_t* img ) {
   return res;
 }
 
+void set_png_settings(desc_params_t* params)
+{
+  params->presmooth_sigma = 0; // no image smoothing since the image is uncompressed
+  params->mid_smoothing = 1.5;
+  params->post_smoothing = 1;
+  params->hog_sigmoid = 0.2;
+  params->ninth_dim = 0.1; // low ninth_dim since image PSNR is high
+}
+
+void set_jpg_settings(desc_params_t* params)
+{
+  params->presmooth_sigma = 1; // smooth the image to remove jpg artifacts
+  params->mid_smoothing = 1.5;
+  params->post_smoothing = 1;
+  params->hog_sigmoid = 0.2;
+  params->ninth_dim = 0.3; // higher ninth_dim because of pixel noise
+}
 
 // set default params
 void set_default_desc_params( desc_params_t* params )
 {
   // default = jpg settings,
   // better in almost all cases
-  params->presmooth_sigma = 1.0;
-  params->mid_smoothing = 1.5;
-  params->post_smoothing = 1.0;
-  params->hog_sigmoid = 0.2;
-  params->ninth_dim = 0.3;
+  set_jpg_settings(params);
   params->norm_pixels = false;
 }
 

@@ -92,11 +92,16 @@ image_t* rescale_image( image_t* im, int width, int height )
 
 
 float_image* compute_match_ims(image_t *im1, image_t *im2, dm_params_t& params, scalerot_params_t& sr_params, bool& use_scalerot) 
-{  
-  if( !use_scalerot && params.subsample_ref && 
-      (!ispowerof2(im1->width) || !ispowerof2(im1->height)) )
-    fprintf(stderr, "WARNING: first image has dimension which are not power-of-2\nFor improved results, you should consider resizing the images with '-resize <w> <h>'");
-  
+{
+  if( use_scalerot )
+    assert( params.ngh_rad == 0 || !"max trans cannot be used in full scale and rotation mode");
+  else {
+    if( params.subsample_ref && (!ispowerof2(im1->width) || !ispowerof2(im1->height)) ) {
+      fprintf(stderr, "WARNING: first image has dimension which are not power-of-2\n");
+      fprintf(stderr, "For improved results, you should consider resizing the images with '-resize <w> <h>'\n");
+    }
+  }
+
   // compute deep matching
   float_image* corres = use_scalerot ? 
          deep_matching_scale_rot( im1, im2, &params, &sr_params ) : 
@@ -109,9 +114,9 @@ int main(int argc, const char ** argv)
 {
   if( argc<=2 || !strcmp(argv[1],"-h") || !strcmp(argv[1],"--help") )  usage(); 
   
-  int current_arg = 3;
   // load images
   image_t *im1=NULL, *im2=NULL;
+  int current_arg = 3;
 
   // set params to default
   dm_params_t params;
@@ -125,6 +130,19 @@ int main(int argc, const char ** argv)
   int rsz_width = -1, rsz_height = -1;
   bool write_binary_file = false;
   int skip_frames = 0;
+
+  // if images given, change parameters
+  if (strcmp(argv[1], "-i") != 0)
+  {
+    if( endswith(argv[1],"png") || endswith(argv[1],"PNG") )
+      set_png_settings(&params.desc_params);  // set default
+    if( endswith(argv[1],"ppm") || endswith(argv[1],"PPM") )
+      set_png_settings(&params.desc_params);  // set default
+    if( endswith(argv[1],"jpg") || endswith(argv[1],"JPG") )
+      set_jpg_settings(&params.desc_params);  // set default
+    if( endswith(argv[1],"jpeg") || endswith(argv[1],"JPEG") )
+      set_jpg_settings(&params.desc_params);  // set default
+  }
 
   // parse options
   while(current_arg < argc)
@@ -147,17 +165,9 @@ int main(int argc, const char ** argv)
     else if(isarg("-hog.nrmpix"))
       params.desc_params.norm_pixels = atof(argv[current_arg++]);
     else if(isarg("-png_settings")) { 
-      params.desc_params.presmooth_sigma = 0; // no image smoothing since the image is uncompressed
-      params.desc_params.hog_sigmoid = 0.2;
-      params.desc_params.mid_smoothing = 1.5;
-      params.desc_params.post_smoothing = 1;
-      params.desc_params.ninth_dim = 0.1; // low ninth_dim since image PSNR is high
+      set_png_settings(&params.desc_params);
     } else if(isarg("-jpg_settings")) {
-      params.desc_params.presmooth_sigma = 1; // smooth the image to remove jpg artifacts
-      params.desc_params.hog_sigmoid = 0.2;
-      params.desc_params.mid_smoothing = 1.5;
-      params.desc_params.post_smoothing = 1;
-      params.desc_params.ninth_dim = 0.3; // higher ninth_dim because of pixel noise
+      set_jpg_settings(&params.desc_params);
   // matching parameters
     }else if(isarg("-downscale"))
       params.prior_img_downscale = atoi(argv[current_arg++]);
@@ -257,24 +267,15 @@ int main(int argc, const char ** argv)
   // if passed two images
   if (strcmp(argv[1], "-i") != 0)
   {
-    color_image_t *cim1 = color_image_load(argv[1]);
-    color_image_t *cim2 = color_image_load(argv[2]);
-    
-    // always use -jpg_settings by default, 
-    // since -png_settings is hardly better even for uncompressed image
-    //if( endswith(argv[1],"png") || endswith(argv[1],"PNG") )
-    //  argv[--current_arg] = "-png_settings";  // set default
-    //if( endswith(argv[1],"ppm") || endswith(argv[1],"PPM") )
-    //  argv[--current_arg] = "-png_settings";  // set default
-    //if( endswith(argv[1],"jpg") || endswith(argv[1],"JPG") )
-    //  argv[--current_arg] = "-jpg_settings";  // set default
-    //if( endswith(argv[1],"jpeg") || endswith(argv[1],"JPEG") )
-    //  argv[--current_arg] = "-jpg_settings";  // set default
-    
-    im1 = image_gray_from_color(cim1);
-    im2 = image_gray_from_color(cim2);
-    color_image_delete(cim1);
-    color_image_delete(cim2);
+    {
+      color_image_t *cim1 = color_image_load(argv[1]);
+      color_image_t *cim2 = color_image_load(argv[2]);
+
+      im1 = image_gray_from_color(cim1);
+      im2 = image_gray_from_color(cim2);
+      color_image_delete(cim1);
+      color_image_delete(cim2);
+    }
 
     if (do_resize) {
       assert(im1->width==im2->width && im1->height==im2->height && 
@@ -284,14 +285,6 @@ int main(int argc, const char ** argv)
       im1 = rescale_image(im1, rsz_width, rsz_height);
       im2 = rescale_image(im2, rsz_width, rsz_height);
     }
-
-    if( use_scalerot )
-      assert( params.ngh_rad == 0 || !"max trans cannot be used in full scale and rotation mode");
-    else
-      if( params.subsample_ref && (!ispowerof2(im1->width) || !ispowerof2(im1->height)) ) {
-        fprintf(stderr, "WARNING: first image has dimension which are not power-of-2\n");
-        fprintf(stderr, "For improved results, you should consider resizing the images with '-resize <w> <h>'\n");
-      }
 
     float_image* corres = compute_match_ims(im1, im2, params, sr_params, use_scalerot);
     // save result
@@ -332,14 +325,6 @@ int main(int argc, const char ** argv)
       // im1's memory would be reallocated
       im1 = rescale_image(im1, rsz_width, rsz_height);
     }
-
-    if( use_scalerot )
-      assert( params.ngh_rad == 0 || !"max trans cannot be used in full scale and rotation mode");
-    else
-      if( params.subsample_ref && (!ispowerof2(im1->width) || !ispowerof2(im1->height)) ) {
-        fprintf(stderr, "WARNING: first image has dimension which are not power-of-2\n");
-        fprintf(stderr, "For improved results, you should consider resizing the images with '-resize <w> <h>'\n");
-      }
 
     // allocate memory for im2
     // if resizing, new memory is allocated on each iteration

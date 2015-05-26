@@ -31,10 +31,11 @@ typedef struct {
   
 } desc_params_t;
 
+void set_png_settings(desc_params_t* params);
+void set_jpg_settings(desc_params_t* params);
 
 // set default params
 void set_default_desc_params( desc_params_t* params );
-
 
 /* extract pixel descriptors (pixel-wise HOG)
 */
