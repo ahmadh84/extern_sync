@@ -1,0 +1,5 @@
+deploy
+dep
+depcuda
+TrainingSet/Data/marple8/FlowFiles
+TrainingSet/Data/marple8/*.ppm

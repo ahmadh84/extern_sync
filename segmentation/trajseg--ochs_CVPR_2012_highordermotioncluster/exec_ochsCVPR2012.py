@@ -7,7 +7,10 @@ import sys
 import time
 import errno
 
-dm_dirpath = "/gfsai/ai-group/users/ahumayun"
+import tempfile
+import shutil
+
+#dm_dirpath = "/gfsai/ai-group/users/ahumayun"
 
 def attempt_create_dir(out_dir):
     time.sleep(5)
@@ -27,6 +30,29 @@ def attempt_create_dir(out_dir):
     # except IOError, e:
     #     print(e.errno)
     #     print(e)
+
+
+def get_ochs_trajectories(vid_filepath, skip_frames):
+    # create temporary directory
+    dirpath = tempfile.mkdtemp()
+
+    # use ffmpeg to convert all frames to ppm images
+    ffmpeg_cmd = "ffmpeg -i %s %s/%06d.ppm" % (vid_filepath, tmp_vid_fname)
+    proc = subprocess.Popen(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    ret = proc.wait()
+
+    # write all frame filenames to a bmf text file
+
+    # create executable command
+
+    # read trajectories from file
+
+    # convert the trajectories file into binary format
+
+    # delete the temporary files/folders created
+    shutil.rmtree(dirpath)
+
 
 
 if __name__ == "__main__":
