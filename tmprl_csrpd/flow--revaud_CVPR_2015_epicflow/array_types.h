@@ -9,10 +9,14 @@ typedef unsigned int UINT;
 #define NEW(type) NEWA(type,1)
 #define REALLOC(ptr,type,n) ptr = (type*)realloc(ptr, sizeof(type)*(n))
 
+#ifndef MIN
 #define MIN(a,b)  (((a)<(b)) ? (a) : (b))
+#endif
+#ifndef MAX
 #define MAX(a,b)  (((a)>(b)) ? (a) : (b))
+#endif
 #define SWAP(a,b,type)  {type _t = a; a = b; b = _t;}
-#define between(min,val,max)  (min<=val && val<=max)
+#define BETWEEN_VALS(min,val,max)  (min<=val && val<=max)
 
 static inline float pow2( float f ) {
   return f*f;
