@@ -19,3 +19,6 @@
 [submodule "segmentation/segments--hosang_arXiv_2015_proposalssurvey"]
 	path = segmentation/segments--hosang_arXiv_2015_proposalssurvey
 	url = https://github.com/hosang/detection-proposals.git
+[submodule "segmentation/segments--krahenbuhl_CVPR_2015_lpo"]
+	path = segmentation/segments--krahenbuhl_CVPR_2015_lpo
+	url = https://github.com/philkr/lpo.git
