@@ -22,3 +22,6 @@
 [submodule "segmentation/segments--krahenbuhl_CVPR_2015_lpo"]
 	path = segmentation/segments--krahenbuhl_CVPR_2015_lpo
 	url = https://github.com/philkr/lpo.git
+[submodule "machine_learning/matconvnet"]
+	path = machine_learning/matconvnet
+	url = https://github.com/vlfeat/matconvnet.git
